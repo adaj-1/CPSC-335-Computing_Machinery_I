@@ -61,16 +61,35 @@ calculate:	udiv x9, userInput, x10		// calculating quotient
 		lsl x12, x22, x11		// LSL to find to the power two
 		add trueValue, trueValue, x12	
 		
-		add x11, x11, 1	
+		add x11, x11, 1			// TODO move negative input check before this
 		cmp userInput, xzr
 		b.ne calculate
 	
-
+						
 		ldr x0, =decimalDigit
 		mov x1, trueValue
 		bl printf	
 	
-		b exit
+	//	mov BCDValue, trueValue
+		mov BCDLength, 16
+		mov x12, 0			// number of bits to shift
+
+convertBCD:	mov x9, 0
+		mov x10, 10
+		
+		udiv x9, trueValue, x10
+		msub x22, x9, x10, trueValue
+
+		mov trueValue, x9
+	
+		lsl x13, x22, x12 		
+		add x12, x12, 4
+		
+		add BCDValue, BCDValue, x13
+
+		cmp trueValue, xzr
+		b.ne convertBCD 
+		
 		
 printingBinaryAsBCD:
 		mov x25, BCDValue		// make copy of value
@@ -85,7 +104,7 @@ printingBinaryAsBCD:
 		sub x26, x26, 4
 
 
-printBCDValue:	mov x25, BCDValue
+printBCDValue:	mov x25, BCDValue		//TODO print as BCD representation
 		ror x25, x25, x26
 		and x25, x25, 0xF
 		
