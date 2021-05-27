@@ -125,7 +125,7 @@ void initializeGame (char *playerName, int mode, int rows, int columns,
  * 			S is the cumulative score
  * 			T is the remaining time
  */
-void displayHints(int B, int W, int R, double S, double T)
+void displayHints(int R, double S, double T)
 {
 	printf("  B   W   R   S   T\n");
 	printf(" %d  %d  %d  %.2f  %.2f\n", B, W, R, S, T);
@@ -133,93 +133,83 @@ void displayHints(int B, int W, int R, double S, double T)
 
 void findBW(int rows, int columns, char code[rows][columns], char userGuess[rows][columns])
 {
-	//char tmpCode[rows][columns];
-	//char tmpUserGuess[strlen(userGuess)];
+	char tmpCode[rows][columns];
+	char tmpUserGuess[rows][columns];
+
+	B = 0;
+	W = 0;
+
+	//printf("  -->findBW tmpCode:");
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < columns; j++)
+		{
+			tmpCode[i][j] = code[i][j];
+			//printf("%s",tmpCode[i][j]);
+		}
+	}
+
+	//printf("  -->findBW tmpUserGuess:");
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < columns; j++)
+		{
+			tmpUserGuess[i][j] = userGuess[i][j];
+			//printf("%s",tmpCode[i][j]);
+		}
+	}
 
 
 	for (int i = 0; i < rows; i++)
 		{
 			for (int j = 0; j < columns; j++)
 			{
-				if (userGuess[i][j] == code[i][j])			//TODO fix this for row checking bc user input is 1d array not 2d
+				if (tmpUserGuess[i][j] == tmpCode[i][j])			//TODO fix this for row checking bc user input is 1d array not 2d
 				{
 					B++;
-					userGuess[i][j] = '0';
+					tmpUserGuess[i][j] = '0';						// set to 0 to avoid future match
+					tmpCode[i][j] = '1';							// set to 1 to avoid future match
 				}
 			}
 		}
-
 
 	for (int i = 0; i < rows; i++)
 	{
 		for (int j = 0; j < columns; j++)
 		{
+			char colour = tmpUserGuess[i][j];
+
 			for (int x = 0; x < rows; x++)
 			{
-				for(int y = 0; y < columns; y++)
+				for (int y = 0; y < columns; y++)
 				{
-					if (userGuess[i][j] == code[x][y])
+					if (colour == tmpCode[x][y])
 					{
-						if (i != x && j != y)								//TODO coded for 1d array
-						{
-							W++;
-							userGuess[i][j] = '0';
-						}
+						W++;
+						tmpUserGuess[i][j] = '0';
+						tmpCode[x][y] = '1';
 					}
 				}
-
 			}
 		}
 	}
+
 }
 
 
 /*
  * Description: returns overall score
  */
-void calculateScore(int R, int numOfTrials, double cumScore,int T, double time,
+void calculateScore( int R, int numOfTrials, double cumScore,int T, double time,
 					int rows, int columns, char code[rows][columns], char userGuess[rows][columns])
 {
-	//char tmpCode[rows][columns];
 
-	findBW(rows, columns, code[rows][columns], userGuess[rows][columns]);
 
-/*
-	int B = 0;		// B- calculate
+	findBW(rows, columns, code, userGuess);
 
-	for (int i = 0; i < rows; i++)
-	{
-		for (int j = 0; j < columns; j++)
-		{
-			if (tmpUserGuess[j] == code[i][j])			//TODO fix this for row checking bc user input is 1d array not 2d
-			{
-				B++;
-			}
-		}
-	}
-
-	// W- calculate
-	int W = 0;
-	for (int i = 0; i < strlen(userGuess); i++)
-		{
-			for (int j = 0; j < rows; j++)
-			{
-				for (int x = 0; x < columns; x++)
-				{
-					if (tmpUserGuess[i] == code[j][x])
-					{
-						if (i != x)								//TODO coded for 1d array
-						{
-							W++;
-						}
-					}
-				}
-			}
-		}
-*/
 
 	// S- calculate cumulative score
-	double stepScore =(B + (W/ 2)) / numOfTrials;		// calculate stepscore
+	double stepScore = (B + (W/ 2)) / numOfTrials;		// calculate stepscore
 	printf("  --> stepScore: %.2f\n", stepScore);
 
 	cumScore = cumScore + stepScore;
@@ -238,7 +228,7 @@ void calculateScore(int R, int numOfTrials, double cumScore,int T, double time,
 	*/
 
 
-	displayHints(B, W, numOfTrials, cumScore, time);
+	displayHints(numOfTrials, cumScore, time);
 }
 
 /*
@@ -332,9 +322,10 @@ bool checkUserInput(int N, int M, int C, int R, int T)
 	return inputStatus;
 }
 
-char* formatUserInput(char *userGuess)
+bool getGuessInput(int rows, int columns,char userGuess[rows][columns])
 {
 	char inputString[100]= {0};
+	char tmpString[100] = {0};
 
 	printf( "Enter your guess below:\n");
 
@@ -346,7 +337,7 @@ char* formatUserInput(char *userGuess)
 	}
 	while(inputString[i-1] != '\n');
 
-	inputString[i-1] = 0;
+	inputString[i-1] = 0;								// null terminate string
 
 	printf("  --> inputString is: %s\n", inputString);
 
@@ -355,7 +346,7 @@ char* formatUserInput(char *userGuess)
 	{
 		if (inputString[i] != ' ')
 		{
-			userGuess[j] = inputString[i];     // If the character is not a space
+			tmpString[j] = inputString[i];     	// If the character is not a space
 		}	                                        // Copy that character to the output char[]
 		else
 		{
@@ -363,11 +354,22 @@ char* formatUserInput(char *userGuess)
 		}		                                   // If it is a space then do not increment the output index (j), the next non-space will be entered at the current index
 	 }
 
+//TODO input validation that inputstring contains enough guesses
+
 
 	//  TODO ensure there are enough characters entered and within the color range
-	printf("  --> userGuess is: %s\n", userGuess);
+	printf("  --> input tmpString is: %s\n", tmpString);
 
-	return userGuess;
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < columns; j++)
+		{
+			userGuess[i][j] = tmpString[i*columns + j];
+		}
+	}
+
+
+	return true;
 }
 
 /*
@@ -387,6 +389,7 @@ int main( int argc, char *argv[] )
 		T,
 		mode;
 	int S = 0;
+
 
 	double timeElapsed = 0;
 
@@ -446,18 +449,15 @@ int main( int argc, char *argv[] )
 
 	int deletecounter = 0;											//TODO delete
 
-	char testInput[100] = {0};
-	//char userGuess[100] = {0};
-
 	do
 	{
 		numOfTrials++;
-		strcpy(testInput, formatUserInput(userGuess));
-		calculateScore(R, numOfTrials, S, T, timeElapsed, N,  M, code, Input);
+		getGuessInput(N, M,userGuess);
+		calculateScore(R, numOfTrials, S, T, timeElapsed, N,  M, code, userGuess);
 
 		deletecounter++;
 	}
-	while(deletecounter < 3);
+	while(deletecounter < 6);
 
 
 	free(code);
