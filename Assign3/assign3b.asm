@@ -1,30 +1,32 @@
 // assign3b.asm
 // CPSC 355 Assignment 3
-// binary to BCD
-// Jada  Li
-// UCID: 30016807
+// binary to BCD 
+// Jada Li
+// UCID: 3001680
 
+
+// how to indicate negative binary input. will you enter -1010 0110, 1111  010101, or will we have to do something else like bit extend will it also include spaces or no spaces
+
+// for the program output do you expect printing in decimal using bcd code or in binary format like 1111 0011 with space or 11110011 no spaces
 .data						// must be delcared to call scanf()
 n: 	.word 0					// must be delcared to call scanf()
 
 .text
 scan:		.string "%ld"						// holds user input in long integer
-prompt:		.string "Please enter N (a number in BCD):\n"		// prompts user to input 
-printTrueValue:	.string "the True Value is %d\n"
-printOne:	.string "1"
-printZero:	.string "0"
-printSpace:	.string " "
+prompt:		.string "Please enter N (a number in BCD):\n"		// prompts user to enter BCD
+decimalDigit:	.string "%d"						// used to print binary
+nextLine:	.string "\n"						// used to after printing binary
 
 		.balign 4			// ensures instructions are properly aligned
 		.global main			// makes the label "main" visible to the linker
 
 		define(userInput, x19)
-		define(BCDValue, x20)
-		define(trueValue, x21)		
+		define(BCDLength, x23) 		
+		define(BCDValue, x24) 
+		
 
 main:		stp x29, x30, [sp, -16]!	// saves the state of the registers used by calling code
 		mov x29, sp			// updates FP to the current SP
-
 
 userInput:	ldr x0, =prompt			// prompt message 
 		bl printf			// print message
@@ -34,101 +36,65 @@ userInput:	ldr x0, =prompt			// prompt message
 		bl scanf			// Get the first number
 
 		ldr x14, =n			// load address =n to register x14
-		ldr userInput, [x14]		// load the value of n 
+		ldr userInput, [x14]		// load the value of n
+			
+		mov x10, 10			// initializing contant for finding remainder
+		mov x11, 0			// temp register for exponential counter
 
-calculate:	mov x10, 10			// initializing constant for finding remainder
-		mov x11, 0			// intializing exponential counter
-		mov x13, 1			// initializing value for conversion to decimal
-		mov x23, 0			// initializing register to hold BCDValue
-		mov trueValue, 0
+convertBCD:	mov x12, 0			// initializing number of bits to shift
+		mov x27, 0			// initializing positive number 
+		mov BCDLength, 0		// initializing BCDLength
 
-bcdLoop:	udiv x9, userInput, x10		// calculating quotient
+		cmp userInput, 0		// check if negative number
+		b.gt BCDLoop			// branch to BCDLoop
+		mov x27, 1			// setting as flag for negative
+		neg userInput, userInput	// removing negative from trueValue to properly convert to BCD
+		
+BCDLoop:	add BCDLength, BCDLength, 4	// to track length of bits
+		mov x9, 0			// initializing quotient
+		mov x10, 10			// initializing denominator
+		
+		udiv x9, userInput, x10		// calculating quotient
 		msub x22, x9, x10, userInput	// calculating modulus
-		
-		mov userInput, x9		// udpating userInput after divided by 10
-	
-		lsl x12, x22, x11		// LSL to find to the power two
-		add BCDValue,BCDValue, x12	// calculating decimal value
-		
-		add x11, x11, 1			// increments exponential counter
-		cmp x11, 4			// if less than 4 it is the end of the BCD section
-		b.lt bcdLoop
-	
-	
-		mul x23, BCDValue, x13		// calculating correct decimal place
-		add trueValue, trueValue, x23	// calculating true value
-		mul x13, x13, x10		// incrementing to next decimal place
-		mov x11, 0			// to count next set of bits	
-		mov x14, 0
-		mov x14, BCDValue	
-		mov BCDValue, 0		
-		cmp userInput, xzr		// check if userInput is 0 now
-		b.ne bcdLoop			
-		
-		mov x15, 15			// to hold negative value
-		cmp x14, x15
-		b.ne decimalToBinary
-		mul x14, x14, x13		// to calculate decimal position
-		udiv x14, x14, x10 		// to account for the additional increment		
-		sub trueValue, trueValue, x14	
-		mov x24, 1			// to a ccount for negative value	
 
+		mov userInput, x9		// copying quotient to trueValue
 	
-		ldr x0, =printTrueValue
-		mov x1, trueValue
-		bl printf
+		lsl x13, x22, x12 		// LSL to shift to the proper BCD position
+		add x12, x12, 4			// adding 4 to shift to next digit
 		
-decimalToBinary:
-		mov x11, 1			// initializing temp register to count 4 bits
-		mov x12, 0
-		mov x13, 4
-	
-binaryLoop:	cmp trueValue, 0
-		b.eq pZero
-		
-		cmp trueValue, 1
-		b.eq pOne
-		
-		add x11, x11, 1			// counting bits to account for spaces
-		udiv x12, x11, x13		// checking if four bits have been printed
-		msub x12, x11, x13, x12		// if four bits have been printed msub will be 0
-		cmp x12, 0
-		b.eq pSpace
-		
-		mov x10, 2
-		udiv x9, trueValue, x10
-		msub x22, x9, x10, trueValue
-	
-		mov trueValue, x9
-		
-		cmp x22, 1
-		b.ne pZero 
+		add BCDValue, BCDValue, x13	// storing back values in BCD Representation
 
-pOne:	ldr x0, =printOne
-		bl printf
-		
-		cmp trueValue, 1
-		b.ne binaryLoop
-		b exit
+		cmp userInput, xzr		// checking if finished converting all values
+		b.ne BCDLoop 
 	
-pZero:	ldr x0, =printZero
-		bl printf
+		mov x26, BCDLength
+
+checkNeg:	cmp x27, 1
+		b.ne printingBinaryAsBCD	// not negative
+		mov x28, 1111		
 		
-		cmp trueValue, 0
-		b.ne binaryLoop
-		b exit
+		ldr x0, =decimalDigit		
+		mov x1, x28
+		bl printf			
+		
+printingBinaryAsBCD:
+		mov x25, BCDValue		// make copy of value
+		sub x26, x26, 1			// number of bits to shift
+		ror x25, x25, x26		// rotate right by number of bits
+		and x25, x25, 0x1		// mask by everything but last digit
+		cmp x26, xzr
+		b.lt exit	
+			
+		ldr x0, =decimalDigit		
+		mov x1, x25
+		bl printf			
 
-pSpace:	ldr x0, =printSpace
-		bl printf
-		mov x11, 1
-		b binaryLoop	
+		b printingBinaryAsBCD
 
-exit:		ldp 	x29,	x30, 	[sp], 	16 	// restores state
+exit:		ldr x0, =nextLine		
+		bl printf			
+		
+		ldp 	x29,	x30, 	[sp], 	16 	// restores state
 		ret					// returns control to calling code
-
-
-
-
-
 
 
