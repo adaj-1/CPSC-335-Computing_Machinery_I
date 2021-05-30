@@ -1,32 +1,26 @@
 // assign3a.asm
 // CPSC 355 Assignment 3
-// binary to decimal
+// binary to BCD 
 // Jada Li
 // UCID: 3001680
 
 
-// how to indicate negative binary input. will you enter -1010 0110, 1111  010101, or will we have to do something else like bit extend will it also include spaces or no spaces
-
-// for the program output do you expect printing in decimal using bcd code or in binary format like 1111 0011 with space or 11110011 no spaces
 .data						// must be delcared to call scanf()
 n: 	.word 0					// must be delcared to call scanf()
 
 .text
 scan:		.string "%ld"						// holds user input in long integer
-prompt:		.string "Please enter N (a number in binary):\n"	// prompts user to input sequence
-currentLength: 	.string "current length of binary is %d\n"		//TODO delete
-rightShift:	.string "right shift is at %d\n"
-decimalDigit:	.string "%d\n"
-nextLine:	.string "\n"
-negative:	.string "-"
+prompt:		.string "Please enter N (a number in binary):\n"	// prompts user to enter binary number
+decimalDigit:	.string "%d"						// used to print BCD representation
+nextLine:	.string "\n"						// used to after printing BCD representation
 
 		.balign 4			// ensures instructions are properly aligned
 		.global main			// makes the label "main" visible to the linker
 
-		define(BCDLength, x23) 
-		define(BCDValue, x24) 
-		define(trueValue, x20)
-		define(userInput, x19)
+		define(userInput, x19)		// macro to hold userInput
+		define(BCDLength, x23) 		// macro to hold length of BCD value
+		define(BCDValue, x24) 		// macro to hold BCD Value
+		define(trueValue, x20)		// macro to hold true value
 		
 
 main:		stp x29, x30, [sp, -16]!	// saves the state of the registers used by calling code
@@ -42,10 +36,6 @@ userInput:	ldr x0, =prompt			// prompt message
 		ldr x14, =n			// load address =n to register x14
 		ldr userInput, [x14]		// load the value of n
 			
-		ldr x0, =decimalDigit		// TODO delete from
-		mov x1, userInput
-		bl printf			//TODO delete to
-		
 		mov x10, 10			// initializing contant for finding remainder
 		mov trueValue, 0		// initializing trueValue
 		mov x11, 0			// temp register for exponential counter
@@ -63,23 +53,17 @@ calculate:	udiv x9, userInput, x10		// calculating quotient
 		cmp userInput, xzr		// checking if we are done converting
 		b.ne calculate
 						
-		ldr x0, =decimalDigit		//TODO delete from
-		mov x1, trueValue
-		bl printf			//TODO delete to
-		
-		mov trueValue, -329		//TODO test please delete
+	//	mov trueValue, -123		used  to test negative input if needed. Enter negative decimal value (-123)  here and enter positive binary number (1111011) when prompted in command line		
 
 convertBCD:	mov x12, 0			// initializing number of bits to shift
 		mov x27, 0			// initializing positive number 
 		mov BCDLength, 0		// initializing BCDLength
 		cmp trueValue, 0		// check if negative number
 		b.gt BCDLoop			// branch to BCDLoop
-
 		mov x27, 1			// setting as flag for negative
 		neg trueValue, trueValue	// removing negative from trueValue to properly convert to BCD
-			
 		
-BCDLoop:	add BCDLength,BCDLength, 4	// to track length of bits
+BCDLoop:	add BCDLength, BCDLength, 4	// to track length of bits
 		mov x9, 0			// initializing quotient
 		mov x10, 10			// initializing denominator
 		
@@ -95,49 +79,35 @@ BCDLoop:	add BCDLength,BCDLength, 4	// to track length of bits
 
 		cmp trueValue, xzr		// checking if finished converting all values
 		b.ne BCDLoop 
+	
+		mov x26, BCDLength		// copying BCDLength to x26
 
-checkNeg:	cmp x27, 1
+checkNeg:	cmp x27, 1			// checking for negative
 		b.ne printingBinaryAsBCD	// not negative
+		mov x28, 1111			// moving negative BCD representation to x28
 		
-		mov x22, 0xF	
-		lsl x13, x22, x12		// LSL to shift to the decimal position
-		add BCDValue, BCDValue, x13	// accounting for 1111 additional length
-		add BCDLength, BCDLength, 4	
-
+		ldr x0, =decimalDigit		// printing negative
+		mov x1, x28			// printing negative
+		bl printf			// printing negative
+		
 printingBinaryAsBCD:
 		mov x25, BCDValue		// make copy of value
-		sub x26, BCDLength, 4		// number of bits to shift
+		sub x26, x26, 1			// number of bits to shift
 		ror x25, x25, x26		// rotate right by number of bits
-		and x25, x25, 0xF		// mask by 15 in hex
-		cmp x25, 0xF			// check for negative
-		b.ne printBCDValue										
-	
-		ldr x0, =negative		// printing negative symbol
-		bl printf
+		and x25, x25, 0x1		// mask by everything but last digit
+		cmp x26, xzr			// checking if done printing
+		b.lt exit			// if done printing exit
+				
+		ldr x0, =decimalDigit		// printing BCD
+		mov x1, x25			// printing BCD
+		bl printf			// pritning BCD
+					
+		b printingBinaryAsBCD		// continue printing
 
-		sub x26, x26, 4			// keeping track of how many bits left to print
-
-printBCDValue:	mov x25, BCDValue		//TODO print as BCD representation
-		ror x25, x25, x26		// right shifting to print 
-		and x25, x25, 0xF		// masking
-	
-	//	and x25, x25, 0x1
-	//	cmp x25, 1
-	//	b.ne printZero
-//printZero:
-
-		ldr x0, =decimalDigit		//TODO delete from
-		mov x1, x25
-		bl printf			// TODO delete to
-
-		sub x26, x26, 4			// keeping track of how many bits left to print
-		cmp x26,xzr			// chekcing if we are done printing
-		b.ge printBCDValue		
+exit:		ldr x0, =nextLine		// printing next line for format
+		bl printf			// printing next line for format
 		
-		ldr x0, =nextLine		// printing next line
-		bl printf
-
-exit:		ldp 	x29,	x30, 	[sp], 	16 	// restores state
+		ldp 	x29,	x30, 	[sp], 	16 	// restores state
 		ret					// returns control to calling code
 
 

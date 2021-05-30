@@ -1,0 +1,9 @@
+Script started on 2021-05-29 20:50:15-06:00
+]0;jada.li@csa2:~/Assign3jada.li@csa2:~/Assign3$ exit./binaryToBCD 
+Please enter N (a number in binary):
+10010
+00011000
+]0;jada.li@csa2:~/Assign3jada.li@csa2:~/Assign3$ exity[K
+exit
+
+Script done on 2021-05-29 20:50:28-06:00

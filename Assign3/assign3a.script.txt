@@ -1,0 +1,13 @@
+Script started on 2021-05-29 20:39:01-06:00
+]0;jada.li@csa2:~/Assign3jada.li@csa2:~/Assign3$ ./assign3a
+Please enter N (a number in binary):
+1111    111100011000
+-18
+]0;jada.li@csa2:~/Assign3jada.li@csa2:~/Assign3$ ./assign3a
+Please enter N (a number in binary):
+00011000
+18
+]0;jada.li@csa2:~/Assign3jada.li@csa2:~/Assign3$ exit
+exit
+
+Script done on 2021-05-29 20:39:35-06:00

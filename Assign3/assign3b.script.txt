@@ -1,0 +1,13 @@
+Script started on 2021-05-29 20:41:10-06:00
+]0;jada.li@csa2:~/Assign3jada.li@csa2:~/Assign3$ ./assign3b
+Please enter N (a number in BCD):
+-0 18
+111100011000
+]0;jada.li@csa2:~/Assign3jada.li@csa2:~/Assign3$ ./assign3b
+Please enter N (a number in BCD):
+18
+00011000
+]0;jada.li@csa2:~/Assign3jada.li@csa2:~/Assign3$ qq[Ke[K[Kexit
+exit
+
+Script done on 2021-05-29 20:41:22-06:00

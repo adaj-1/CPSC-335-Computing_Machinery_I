@@ -1,0 +1,13 @@
+Script started on 2021-05-29 20:48:45-06:00
+]0;jada.li@csa2:~/Assign3jada.li@csa2:~/Assign3$ ./BCDToBinary
+Please enter N (a number in BCD):
+111100  00011000
+-10010
+]0;jada.li@csa2:~/Assign3jada.li@csa2:~/Assign3$ ./BCDToBinary
+Please enter N (a number in BCD):
+1000    00011000
+10010
+]0;jada.li@csa2:~/Assign3jada.li@csa2:~/Assign3$ exit
+exit
+
+Script done on 2021-05-29 20:49:35-06:00
