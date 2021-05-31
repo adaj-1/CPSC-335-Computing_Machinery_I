@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <math.h>
 
 
 time_t startTime = 0;
@@ -23,10 +24,21 @@ int B = 0;
 int W = 0;
 double cumScore = 0;
 int timeRemaining = 0;
+int hours = 0;
 int minutes = 0;
 int seconds = 0;
 double finalScore = 0;
 bool userQuit = false;
+bool playAgain = false;
+bool gameOver = false;
+
+char playerName[20];					// command line input player name
+int rows,
+	columns,
+	numOfColours,
+	maxTrials,
+	maxTime,
+	mode;
 
 
 /*
@@ -83,13 +95,122 @@ void findTime(int maxTime)
 	}
 }
 
+bool checkUserInput()
+{
+	bool inputStatus = true;
+
+	if (rows < 1)
+	{
+		printf("Input Error: N must be greater than or equal to one.\n");
+		inputStatus = false;
+	}
+
+	if (columns <= 4)
+	{
+		printf("Input Error: C must be greater than or equal to five.\n");
+		inputStatus = false;
+	}
+
+	if (columns > numOfColours)
+	{
+		printf("Input Error: M must be greater than or equal to C.\n");
+		inputStatus = false;
+	}
+
+	if (maxTrials < 1)
+	{
+		printf("Input Error: R must be greater than or equal to one.\n");
+		inputStatus = false;
+	}
+
+	if (maxTime < 0)
+	{
+		printf("Input Error: T must be greater than zero.\n");
+		inputStatus = false;
+	}
+
+	return inputStatus;
+}
 
 /*
  * Description:
  */
-void initializeGame (char *playerName, int mode, int rows, int columns,
-					int numOfColours, int trials, clock_t startTime, char code[rows][columns])
+void initializeGame (char code[rows][columns])
 {
+	startTime = 0;
+	currentTime = 0;
+	numOfTrials = 0;
+	B = 0;
+	W = 0;
+	cumScore = 0;
+	timeRemaining = 0;
+	minutes = 0;
+	seconds = 0;
+	finalScore = 0;
+	userQuit = false;
+	playAgain = false;
+	gameOver = false;
+
+	playerName[20] = 0;					// command line input player name
+	rows = 0;
+	columns = 0;
+	numOfColours = 0;
+	maxTrials = 0;
+	maxTime = 0;
+	mode = 0;
+
+
+		time_t t;
+		srand( (unsigned) time(&t) );
+
+		bool validInput = false;
+		do
+		{
+			printf( "Please enter Player Name, N, M, C, trials, and T values\n" );
+
+#if 1
+			scanf("%s %d %d %d %d %d", playerName, &rows, &columns, &numOfColours, &maxTrials, &maxTime); 		 // TODO uncomment
+#else
+			strcpy(playerName,"Jada");											//TODO delete from
+			rows = 1;
+			columns = 5;
+			numOfColours = 6;
+			maxTrials = 5;
+			maxTime = 1;																//TODO delete to
+#endif
+			//TODO playername input validation
+
+			//printf( "Player Name: %s, N: %d, M: %d, C: %d, R: %d, and maxTime: %d\n", playerName, rows,columns, numOfColours, maxTrials, maxTime);
+
+			validInput = checkUserInput();
+		}
+		while(!validInput);
+
+		maxTime = maxTime * 60; 								// get time in seconds
+
+		bool modeSelect = false;
+		do
+		{
+			printf("Please select a mode:\n"
+					"   Enter 0 to Play\n"
+					"   Enter 1 to Test\n");
+
+			scanf("%d", &mode);				//TODO uncomment
+			//mode = 1;							//TODO delete
+
+			//TODO mode input validation check for non integers
+
+			if (mode == 1 || mode == 0)
+			{
+				modeSelect = true;
+			}
+			else
+			{
+				printf("Input Error: Please enter 1 or 0.\n");
+			}
+		}
+		while(!modeSelect);
+
 	if (mode == 1)
 	{
 		printf("Hello %s!\nRunning Mastermind in test mode\n", playerName);
@@ -106,6 +227,7 @@ void initializeGame (char *playerName, int mode, int rows, int columns,
 		{
 			int randNum = randomNum( 0, numOfColours - 1);
 			code[i][j] = colour(randNum);
+			printf(" %c ", code[i][j]);
 		}
 	}
 
@@ -114,13 +236,13 @@ void initializeGame (char *playerName, int mode, int rows, int columns,
 		printf("Hidden code is: ");
 
 		for (int i = 0; i < rows; i++ )
+		{
+			for (int j = 0; j < columns; j++)
 			{
-				for (int j = 0; j < columns; j++)
-				{
-					printf(" %c ", code[i][j]);			//TODO fix print for when N > 1 lines
-				}
-				printf("\n");
+				printf(" %c ", code[i][j]);			//TODO fix print for when N > 1 lines
 			}
+			printf("\n");
+		}
 	}
 
 	printf("Start cracking...\n");
@@ -131,10 +253,10 @@ void initializeGame (char *playerName, int mode, int rows, int columns,
 		{
 			printf("- ");
 		}
+		printf("\n");
 	}
 
 	printf("  B   W   R   S   T\n");
-
 }
 
 
@@ -149,17 +271,8 @@ void initializeGame (char *playerName, int mode, int rows, int columns,
  */
 void displayHints()
 {
-	if (seconds > 9)
-	{
-		printf("  B   W   R   S   T\n");
-		printf(" %d  %d  %d  %.2f  %d:%d\n", B, W, numOfTrials, cumScore, minutes, seconds);
-	}
-	else
-	{
-		printf("  B   W   R   S   T\n");
-		printf(" %d  %d  %d  %.2f  %d:0%d\n", B, W, numOfTrials, cumScore, minutes, seconds);
-	}
-
+	printf("  B   W   R   S   T\n");
+	printf(" %d  %d  %d  %.2f  %d:%02d\n", B, W, numOfTrials, cumScore, minutes, seconds);
 }
 
 void findBW(int rows, int columns, char code[rows][columns], char userGuess[rows][columns])
@@ -262,7 +375,15 @@ void logScore(char *playerName)
  */
 void transcribeGame(int rows, int columns, char code[rows][columns])
 {
-	/* add in a transcript file. read assignment */
+	hours = startTime / 3600;
+	minutes = (startTime -(3600* hours)) / 60;
+	seconds = (startTime -(3600* hours) - (minutes * 60));
+/*
+	FILE *fp;
+	char transcribeName = "%s_%02d:%02d:%02d", *playerName, hours, seconds, minutes;
+	fp = fopen(transcribeName, "a+");
+
+*/
 }
 
 /*
@@ -275,35 +396,34 @@ bool exitGame()
 
 	printf("Final Score: %.2f\n", finalScore);
 
-
-	if (!userQuit){
-		do{
+	bool validInput = false;
+	if (!userQuit)
+	{
+		do
+		{
 			printf("Please enter 1 to Play Again\n"
 					"or $ to Exit\n");
 			fgets(checkPlayAgain, 50, stdin);																	// takes user input
 
-			printf("checkPlayAgain is %s\n", checkPlayAgain);
 				/* Citation: https://www.geeksforgeeks.org/strtok-strtok_r-functions-c-examples/ */
 				string1 = strtok(checkPlayAgain, " ");																// removes spaces from string
 
-		}
-		while (checkPlayAgain[0] != '1' || checkPlayAgain[0] != '$');
-
-		if (string1 != NULL)																			// ensures string is not NULL
-		{
+			if (string1 != NULL)																			// ensures string is not NULL
+			{
 				if (string1[0] == '$')													// checking for user quit
 				{
 					userQuit = true;
+					validInput = true;
 				}
 				else if (string1[0] == '1')															// getting row number
 				{
+					userQuit = false;
+					playAgain = true;
 					return false;
 				}
+			}
 		}
-
-
-
-
+		while (!validInput);
 	}
 
 	return true;
@@ -316,7 +436,60 @@ bool exitGame()
 void displayTop(int numOfTop)
 {
 	printf( "Display Top - TODO\n");
+
+	FILE *fptr;
+
+	char tmpName[20];
+	float tmpScore;
+	char tmpDuration[10];
+
+	char name[numOfTop][20];     // highest score in slot 0
+	double score[numOfTop];
+	char duration[numOfTop][10];
+
+	for (int i = 0; i < numOfTop; i++)
+	{
+	      name[i][0] = 0;         // null string
+	      score[i] = -INFINITY; // TODO set to -infinite
+	      duration[i][0] = 0;
+	}
+
+	fptr = fopen("mastermind.log","r");
+
+    if (fptr == NULL)
+	{
+		printf("Error!\n");
+		return;
+	}
+
+	while (fscanf( fptr, "%s %f %s", tmpName, &tmpScore, tmpDuration ) == 3 )
+	{
+		printf("%s %f %s\n", tmpName, tmpScore, tmpDuration);
+
+		for (int i = 0; i < numOfTop; i++)
+		{
+			if (tmpScore > score[i])                  // add tmpScore to right position
+	        {
+				for (int j = numOfTop - 1; j > (i - 1); j--)
+				{
+					score[j] = score[j-1];       // shift the top scores down by 1
+					strcpy(name[j], name[j-1]);
+					strcpy(duration[j], duration[j-1]);
+				}
+
+				score[i] = tmpScore;    // add the tmpScore to the right position
+				strcpy(name[i], tmpName);
+				strcpy(duration[i], tmpDuration);
+	        }
+		}
+	}
+
+    for (int i = 0; i < numOfTop; i++)
+    {
+    	 printf("%s %f %s\n", name[i], score[i], duration[i]);
+    }
 }
+
 
 /*
  * Description: The bottom n scores do not include negative infinities
@@ -326,49 +499,15 @@ void displayBottom(int numOfBottom)
 	printf( "Display Bottom - TODO\n");
 }
 
-bool checkUserInput(int N, int M, int C, int R, int T)
-{
-	bool inputStatus = true;
 
-	if (N < 1)
-	{
-		printf("Input Error: N must be greater than or equal to one.\n");
-		inputStatus = false;
-	}
-
-	if (C <= 4)
-	{
-		printf("Input Error: C must be greater than or equal to five.\n");
-		inputStatus = false;
-	}
-
-	if (M > C)
-	{
-		printf("Input Error: M must be greater than or equal to C.\n");
-		inputStatus = false;
-	}
-
-	if (R < 1)
-	{
-		printf("Input Error: R must be greater than or equal to one.\n");
-		inputStatus = false;
-	}
-
-	if (T < 0)
-	{
-		printf("Input Error: T must be greater than zero.\n");
-		inputStatus = false;
-	}
-	return inputStatus;
-}
 
 bool getGuessInput(int rows, int columns,char userGuess[rows][columns])
 {
-
 	char inputString[100]= {0};
 	char tmpString[100] = {0};
 
-	int i = 0;
+#if 0
+	int i = 0;										//TODO delete
 
 	do
 	{
@@ -377,7 +516,16 @@ bool getGuessInput(int rows, int columns,char userGuess[rows][columns])
 	}
 	while(inputString[i-1] != '\n');
 
+
 	inputString[i-1] = 0;								// null terminate string
+#else
+	do
+	{
+		fgets(inputString, 100, stdin);
+	}
+	while (inputString[0] == '\n');								// ignore NULL input
+
+#endif
 
 // CITATION: https://stackoverflow.com/questions/13084236/function-to-remove-spaces-from-string-char-array-in-c
 	for (int i = 0, j = 0; i<strlen(inputString); i++,j++)                        // Evaluate each character in the input
@@ -422,78 +570,22 @@ bool getGuessInput(int rows, int columns,char userGuess[rows][columns])
  */
 int main( int argc, char *argv[] )
 {
-	char playerName[20];					// command line input player name
-	int N,
-		M,
-		C,
-		R,
-		T,
-		mode;
 
+	char (*code)[columns] = malloc(rows * columns * sizeof(code[0][0]));	// allocate memory for code
+	char (*userGuess)[columns] = malloc(rows * columns * sizeof(code[0][0]));	// allocate memory for code
 
+	initializeGame(code);
+	findTime(maxTime);
 
-	time_t t;
-	srand( (unsigned) time(&t) );
+	int numOfTop = 3;
 
-	bool validInput = false;
-	do
-	{
-		printf( "Please enter Player Name, N, M, C, R, and T values\n" );
-		//scanf("%s %d %d %d %d %d", playerName, &N, &M, &C, &R, &T); 		  TODO uncomment
-		strcpy(playerName,"Jada");											//TODO delete from
-		N = 1;
-		M = 5;
-		C = 6;
-		R = 5;
-		T = 1;																//TODO delete to
-
-		//TODO playername input validation
-
-		//printf( "Player Name: %s, N: %d, M: %d, C: %d, R: %d, and T: %d\n", playerName, N, M, C, R, T);
-
-		validInput = checkUserInput(N, M, C, R, T);
-	}
-	while(!validInput);
-
-	T = T * 60; 								// get time in seconds
-
-	bool modeSelect = false;
-	do
-	{
-		printf("Please select a mode:\n"
-				"   Enter 0 to Play\n"
-				"   Enter 1 to Test\n");
-		//scanf("%d", &mode);				TODO uncomment
-		mode = 1;							//TODO delete
-
-		//TODO mode input validation check for non integers
-
-		if (mode == 1 || mode == 0)
-		{
-			modeSelect = true;
-		}
-		else
-		{
-			printf("Input Error: Please enter 1 or 0.\n");
-		}
-	}
-	while(!modeSelect);
-
-	char (*code)[M] = malloc(N * M * sizeof(code[0][0]));	// allocate memory for code
-	char (*userGuess)[M] = malloc(N * M * sizeof(code[0][0]));	// allocate memory for code
-
-	initializeGame(playerName, mode, N, M, C, R, startTime, code);
-	findTime(T);
-
-
-	bool gameOver = false;
-
+	displayTop(numOfTop);
 
 	do
 	{
 		numOfTrials++;
 		printf( "Enter your guess below:\n");
-		getGuessInput(N, M, userGuess);
+		getGuessInput(rows, columns, userGuess);
 
 		if (userQuit)										// userQuit
 		{
@@ -501,41 +593,40 @@ int main( int argc, char *argv[] )
 			gameOver = exitGame();
 		}
 
-		calculateScore(R, T, N,  M, code, userGuess);
+		calculateScore(maxTrials, maxTime, rows, columns, code, userGuess);
 		displayHints();
 
-		if (B == N*M)
+		if (B == rows*columns)
 			{
 				printf("    --> Cracked!\n");
 				logScore(playerName);
 				gameOver = exitGame();
 			}
 
-		if (numOfTrials > R- 1){
+		if (numOfTrials > maxTrials- 1){
 				finalScore = finalScore * -1;
 				logScore(playerName);
 				printf("    --> num of trials exceeded\n");
 				gameOver = exitGame();
 			}
 
-		if(minutes > (double)T)
+		if(minutes > (double)maxTime)
 			{
 				logScore(playerName);
 				printf("    --> time exceeded\n");
 				gameOver = exitGame();
 			}
 
-
-
-
-
-
-
-
+		if (playAgain)
+		{
+			initializeGame(code);
+			findTime(maxTime);
+		}
 	}
 	while(!gameOver);
 
 	free(code);
+	free(userGuess);
 }
 
 
