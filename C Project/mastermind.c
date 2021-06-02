@@ -15,6 +15,10 @@
 #include <unistd.h>
 #include <math.h>
 
+#define MY_POS_INFINITY 9999999
+#define MY_NEG_INFINITY -9999999
+
+
 struct UserSetup
 {
 	char playerName[20];					// command line input player name
@@ -296,14 +300,17 @@ bool calculateScore(struct UserSetup setup,
  * 			score holds the current score
  * 			time holds how long the game was
  */
-void logScore(struct UserSetup setup, struct AllScores *score, struct GameTime gameTime)
+void logScore(struct UserSetup setup, struct AllScores score, struct GameTime gameTime)
 {
 	/* add in time */
 	/* TODO users who do not finish the game are not included in the returned list */
 
 	FILE *fp;
 	fp = fopen("mastermind.log", "a+");											// creates/ adds to log file
-	fprintf(fp,"%s %f %d:%d\n", setup.playerName, score->finalScore, gameTime.minutes, gameTime.seconds);			// records player name and score in log file
+	fprintf(fp,"%s %f %d:%d\n", setup.playerName,
+								score.finalScore,
+								gameTime.minutes,
+								gameTime.seconds);			// records player name and score in log file
 }
 
 /*
@@ -326,7 +333,7 @@ void transcribeGame(struct UserSetup setup,
 
 void exitGame(struct UserSetup setup,
 		char code[setup.rows][setup.columns],
-		struct AllScores *score,
+		struct AllScores score,
 		struct GameTime gameTime)
 {
 	logScore(setup, score, gameTime);
@@ -366,12 +373,145 @@ bool checkUserQuit()
  */
 void displayTop(int numOfTop)
 {
+	printf( "Display Top - TODO\n");
+
+		FILE *fptr;
+
+		char tmpName[20];
+		float tmpScore;
+		char tmpDuration[10];
+
+		char name[numOfTop][20];     // highest score in slot 0
+		double score[numOfTop];
+		char duration[numOfTop][10];
+
+		for (int i = 0; i < numOfTop; i++)
+		{
+			name[i][0] = 0;         // null string
+		    score[i] = -INFINITY; // TODO set to -infinite
+		    duration[i][0] = 0;
+		}
+
+		fptr = fopen("mastermind.log","r");
+
+	    if (fptr == NULL)
+		{
+			printf("Error!\n");
+			return;
+		}
+
+		while (fscanf( fptr, "%s %f %s", tmpName, &tmpScore, tmpDuration ) == 3 )
+		{
+			for (int i = 0; i < numOfTop; i++)
+			{
+				if (tmpScore > score[i])                  // add tmpScore to right position
+		        {
+					for (int j = numOfTop - 1; j > (i - 1); j--)
+					{
+						score[j] = score[j-1];       // shift the top scores down by 1
+						strcpy(name[j], name[j-1]);
+						strcpy(duration[j], duration[j-1]);
+					}
+
+					score[i] = tmpScore;    // add the tmpScore to the right position
+					strcpy(name[i], tmpName);
+					strcpy(duration[i], tmpDuration);
+					break;					// break out of for loop
+		        }
+			}
+		}
+
+	    for (int i = 0; i < numOfTop; i++)
+	    {
+	    	 printf("%s %f %s\n", name[i], score[i], duration[i]);
+	    }
 
 }
 
 void displayBottom(int numOfBottom)
 {
+		FILE *fptr;
 
+		char tmpName[20];
+		float tmpScore;
+		char tmpDuration[10];
+
+		char name[numOfBottom][20];     // highest score in slot 0
+		double score[numOfBottom];
+		char duration[numOfBottom][10];
+
+		for (int i = 0; i < numOfBottom; i++)
+		{
+			name[i][0] = 0;         // null string
+		    score[i] = MY_POS_INFINITY; // TODO set to infinite
+		    duration[i][0] = 0;
+		}
+
+		fptr = fopen("mastermind.log","r");
+
+		if (fptr == NULL)
+		{
+			printf("Error!\n");
+			return;
+		}
+
+		while (fscanf( fptr, "%s %f %s", tmpName, &tmpScore, tmpDuration ) == 3 )
+		{
+			for (int i = 0; i < numOfBottom; i++)
+			{
+				if (tmpScore == MY_NEG_INFINITY)
+				{
+					printf("----> MY_NEG_INFINITY\n");
+				}
+				else
+				{
+					printf("----> not MY_NEG_INFINITY\n");
+				}
+
+				if (tmpScore < score[i] && tmpScore != MY_NEG_INFINITY)                  // add tmpScore to right position
+		        {
+					for (int j = numOfBottom - 1; j > (i - 1); j--)
+					{
+						score[j] = score[j-1];       // shift the top scores down by 1
+						strcpy(name[j], name[j-1]);
+						strcpy(duration[j], duration[j-1]);
+					}
+						score[i] = tmpScore;    // add the tmpScore to the right position
+					strcpy(name[i], tmpName);
+					strcpy(duration[i], tmpDuration);
+					break;					// break out of for loop
+		        }
+			}
+		}
+
+		for (int i = 0; i < numOfBottom; i++)
+		{
+		   	 printf("%s %f %s\n", name[i], score[i], duration[i]);
+		}
+			//TODO infinity
+}
+
+void checkDisplayTopBottom()
+{
+	int option;
+	int n;
+
+	printf("Top Scores (0) or Bottom Scores (1) or Start Game (2)\n");
+	scanf("%d", &option);
+
+	if (option == 0)
+	{
+		printf("Enter number of Top Scores to display:\n");
+		scanf("%d", &n);
+		displayTop(n);
+	}
+	else if (option == 1)
+	{
+		printf("Enter number of Bottom Scores to display:\n");
+		scanf("%d", &n);
+		displayBottom(n);
+	}
+	return;
 }
 
 bool getGuessOrCommands(struct UserSetup setup,
@@ -417,21 +557,6 @@ bool getGuessOrCommands(struct UserSetup setup,
 		printf("----> in quit\n");
 		return true;
 	}
-	//TODO TOP AND BOTTOM SCORES
-	/*
-	else if (userGuess[0][0] == 't'|| userGuess[0][0] == 'T')
-	{
-		*n = atoi(&userGuess[0][1]);
-		printf("----> n = %d\n", *n);
-		return CMD_TOPN;
-	}
-	else if (userGuess[0][0] == 'b'|| userGuess[0][0] == 'B')
-	{
-		*n = atoi(&userGuess[0][1]);
-		printf("----> n = %d\n", *n);
-		return CMD_BOTN;
-	}
-	*/
 	else
 	{
 		printf("----> in guessed\n");
@@ -563,9 +688,9 @@ int main(int argc, char *argv[])
 	//printf( "TOP BOTTOM SCORE:\n");				//TODO ask user for top/bottom score ONLY
 	//getGuessOrCommands(mySetup,userGuess, &n);
 
+	checkDisplayTopBottom();
 
 	bool gameQuit = false;
-
 	while (!gameQuit)
 	{
 		initializeGame (mySetup, code, &myGameTime, &myScores);
@@ -580,9 +705,9 @@ int main(int argc, char *argv[])
 
 			if (gameQuit)
 			{
-				myScores.finalScore = -INFINITY;
-				//myGameTime.       = INFINITY;
-
+				myScores.finalScore = MY_NEG_INFINITY;
+				myGameTime.minutes = 99;
+				myGameTime.seconds = 99;			//TODO fix to positive infinity
 			}
 			else
 			{
@@ -597,9 +722,8 @@ int main(int argc, char *argv[])
 		} // not gameOver
 		//TODO call exitGame() to do log file
 		//TODO transcript
-
-
-
+		exitGame(mySetup, code, myScores, myGameTime);
+		checkDisplayTopBottom();
 	} // not gameQuit
 
 	free(code);
