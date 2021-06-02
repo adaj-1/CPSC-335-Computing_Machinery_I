@@ -16,8 +16,8 @@
 #include <math.h>
 
 
-#define MY_POS_INFINITY 9999999
-#define MY_NEG_INFINITY -9999999
+#define MY_POS_INFINITY 999999
+#define MY_NEG_INFINITY -999999
 
 char screenOutput[40][80];
 int screenCurrentRow=0;
@@ -36,7 +36,7 @@ struct UserSetup
 struct GameTime
 {
 	time_t startTime;
-	int timeRemaining;
+	double timeRemaining;
 	int hours;
 	int minutes;
 	int seconds;
@@ -88,6 +88,8 @@ void findTime(int maxTimeSec, struct GameTime *gameTime)
 
 	gameTime->timeRemaining = maxTimeSec - temp;
 
+
+/*
 	if (gameTime->timeRemaining > 0)
 	{
 		gameTime->minutes = gameTime->timeRemaining / 60;
@@ -96,6 +98,30 @@ void findTime(int maxTimeSec, struct GameTime *gameTime)
 	else
 	{
 		gameTime->timeRemaining = 0;
+	}
+*/
+
+}
+
+void timeToString(double timeInSec, char *timeStr)  // convert sec time to mm:ss format
+{
+	if (timeInSec == MY_POS_INFINITY)
+	{
+		strcpy(timeStr, "INFINITY");
+	}
+	else if (timeInSec > 0)
+	{
+		int minutes = 0;
+		int seconds = 0;
+
+		minutes = timeInSec / 60;
+		seconds = timeInSec- (minutes * 60);
+
+		sprintf(timeStr, "%02d:%02d", minutes, seconds);
+	}
+	else
+	{
+		strcpy(timeStr, "00:00");
 	}
 }
 
@@ -119,6 +145,8 @@ void initializeGame (struct UserSetup setup,
 
 	time_t t;
 	srand( (unsigned) time(&t) );
+
+	screenCurrentRow = 0;					// reset the display buffer
 
 	if (setup.mode == 1)
 	{
@@ -193,29 +221,30 @@ void displayHints(struct UserSetup setup, struct GameTime gameTime, struct AllSc
 
 	for (int i=0; i < setup.rows*setup.columns; i++)
 	{
-		strcat( userInputSpaceStr, "  ");
-		userInputStr[2*i] = userGuess[setup.rows][setup.columns];
+		strcat( userInputSpaceStr, "- ");
+		userInputStr[2*i] = userGuess[0][i];
 		userInputStr[2*i+1] = ' ';
 		userInputStr[2*i+2] = '\0';
 	}
 
-	//timeToString( timeRemaining, timeStr);
+	// convert time in sec to mm:ss format
+	char timeStr[20];
+	timeToString(gameTime.timeRemaining, timeStr);
 
 	// generate screenOuput for the last results
-	sprintf(screenOutput[screenCurrentRow++], "%s  B   W   R   S   T\n", userInputSpaceStr);
-	sprintf(screenOutput[screenCurrentRow++], "%s %d  %d  %d  %.2f  %d:%d\n", userInputStr,
+	sprintf(screenOutput[screenCurrentRow++], "%s  B  W  R  S    T\n", userInputSpaceStr);
+	sprintf(screenOutput[screenCurrentRow++], "%s %2d %2d %2d  %4.2f %s\n", userInputStr,
 																			score.B,
 																		 score.W,
 																		 score.numOfTrials,
 																		 score.cumScore,
-																		 gameTime.minutes,
-																		 gameTime.seconds);
+																		 timeStr);
 
 	//system("clear"); TODO uncomment
 
 	for (int i = 0; i < screenCurrentRow; i++)		// print all hints for this game
 	{
-		printf( "%s\n", screenOutput[i] );
+		printf( "%s", screenOutput[i] );
 	}
 }
 
@@ -315,7 +344,7 @@ bool calculateScore(struct UserSetup setup,
 		return true;
 	}
 
-	if(gameTime->minutes > (double)setup.maxTime)
+	if(gameTime->timeRemaining < 0)
 	{
 		printf("Time exceeded.\n");
 		return true;
@@ -336,7 +365,7 @@ void logScore(struct UserSetup setup, struct AllScores score, struct GameTime ga
 	/* TODO users who do not finish the game are not included in the returned list */
 
 	FILE *fp;
-	fp = fopen("mastermind.log", "a+");											// creates/ adds to log file
+	fp = fopen("mastermind.log", "ab+");											// creates/ adds to log file
 	fprintf(fp,"%s %f %d:%d\n", setup.playerName,
 								score.finalScore,
 								gameTime.minutes,
