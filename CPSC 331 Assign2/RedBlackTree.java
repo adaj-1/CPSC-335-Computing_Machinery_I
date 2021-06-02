@@ -23,6 +23,8 @@ public class RedBlackTree implements Dictionary{
 
 	private Node tRoot;
 	private Node tNil;
+	private String redBlackTree = "";				// to hold redBlackTree format string
+	private int toStringCount = 0;					// to indicate whether toString has been run before
 	
 	/*
 	 * Description: Red Black Tree Constructor. Initialized to empty tree.
@@ -31,23 +33,23 @@ public class RedBlackTree implements Dictionary{
 	{
 		tNil = new Node();					// creating new leaf/tNil node
 		tNil.colour = BLACK;				// filling with tNil properties
-		tNil.leftChild = null;
-		tNil.rightChild = null;
+		tNil.leftChild = null;				// setting to null
+		tNil.rightChild = null;				// setting to null
 		tRoot = tNil;						// initialize empty tree
 	}
 	
 	/*
 	 * Description: Iterative Tree Search algorithm find value within RBT
 	 * 
-	 * @param	value is searched for among the RBT keys
+	 * @param	value	is searched for among the RBT keys
 	 * 
-	 * @returns	x the node which the value belongs to
+	 * @returns	x		the node which the value belongs to
 	 */
 	private Node iterativeTreeSearch(int value)
 	{
 		Node x = tRoot;							// start  search at root
 		
-		while (x != tNil && value != x.key)		// while value is not null or the root node TODO null
+		while (x != tNil && value != x.key)		// while value is not tNIL or the root node
 		{
 			if (value < x.key)
 			{
@@ -62,35 +64,11 @@ public class RedBlackTree implements Dictionary{
 	}
 
 	/*
-	 * Description: to move subtrees around within the RBT
-	 * 
-	 * @param	deleted the subtree rooted at this node
-	 * 			replace the subtree that was deleted
-	 */
-	private void rbTransplant(Node deleted, Node replace)
-	{
-		if (deleted.parent == tNil)							// handle if deleted subtree is root of  RBT TODO null
-		{
-			tRoot = replace;
-		}
-		else if (deleted == deleted.parent.leftChild)		// if deleted is a left child, update parent
-		{
-			deleted.parent.leftChild = replace;
-		}
-		else
-		{
-			deleted.parent.rightChild = replace;			// if deleted is a right child, update parent
-		}
-		
-		replace.parent = deleted.parent;					// take parent of deleted and assign to replacement
-	}
-	
-	/*
 	 * Description: find the minimum  key in the RBT
 	 * 
-	 * @param	min given node to find the minimum element in subtree
+	 * @param	min		given node to find the minimum element in subtree
 	 * 
-	 * @return	min nod that holds the minimum element
+	 * @return	min		nod that holds the minimum element
 	 */
 	private Node treeMinimum(Node min)
 	{
@@ -101,19 +79,19 @@ public class RedBlackTree implements Dictionary{
 		
 		return min;
 	}
-	
+		
 	/*
 	 * Description: checks if RBT is empty
 	 * 
-	 * TODO exception
+	 * @returns		NullPointerException	if RBT is empty
+	 * 				false 					if RBT is not empty
 	 */
 	@Override
 	public boolean empty() 
 	{
 		if(tRoot == tNil)
 		{
-			System.out.printf("tree is empty\n");				//TODO delete
-			return true;
+			throw new NullPointerException("Red-Black Tree is empty.\n");		// throws empty exception
 		}
 		return false;
 	}
@@ -150,8 +128,10 @@ public class RedBlackTree implements Dictionary{
 				{
 					/* CASE 2 */
 					insertedNode = insertedNode.parent;
-					leftRotate(insertedNode);
-					
+					leftRotate(insertedNode);	
+				}
+				else
+				{
 					/* CASE 3 */
 					insertedNode.parent.colour = BLACK;
 					insertedNode.parent.parent.colour = RED;
@@ -175,17 +155,14 @@ public class RedBlackTree implements Dictionary{
 					/* CASE 2 */
 					insertedNode = insertedNode.parent;
 					rightRotate(insertedNode);
-					
+				} 
+				else
+				{
 					/* CASE 3 */
 					insertedNode.parent.colour = BLACK;
 					insertedNode.parent.parent.colour = RED;
 					leftRotate(insertedNode.parent.parent);
 				}
-			}
-			
-			if (insertedNode == tRoot)					// break out of loop if insertedNode becomes tRoot
-			{
-				break;
 			}
 		}	
 		tRoot.colour = BLACK;							
@@ -194,20 +171,20 @@ public class RedBlackTree implements Dictionary{
 	/*
 	 * Description: to insert a new value into the RBT
 	 * 
-	 * @param	key value to be inserted
+	 * @param	key	value to be inserted
 	 */
 	@Override
 	public void insert(int key) 
 	{
 		Node insertedNode = new Node();			// initialize new node
 		insertedNode.key = key;
+		insertedNode.colour = RED;
 		insertedNode.parent = tNil;	
 		insertedNode.leftChild = tNil;
 		insertedNode.rightChild = tNil;
-		insertedNode.colour = RED;
-		
-		Node tmpNode = tNil;					// TODO set to null
-		Node rootNode = tRoot;				// TODO set to this.tRoot
+	
+		Node tmpNode = tNil;					
+		Node rootNode = tRoot;					// TODO set to this.tRoot
 
 		while (rootNode != tNil)
 		{
@@ -225,7 +202,7 @@ public class RedBlackTree implements Dictionary{
 		
 		insertedNode.parent = tmpNode;
 		
-		if (tmpNode == tNil)					//TODO set to null
+		if (tmpNode == tNil)
 		{
 			tRoot = insertedNode;
 		}
@@ -238,22 +215,14 @@ public class RedBlackTree implements Dictionary{
 			tmpNode.rightChild = insertedNode;
 		}
 		
-				
-		/* TODO 170-180 needs to be explained, directly copied from: https://www.programiz.com/dsa/red-black-tree*/
-		if (insertedNode.parent == tNil)		//TODO set to null
-		{
-			insertedNode.colour = BLACK;
-			return;
-		}
-		
-		if (insertedNode.parent.parent == tNil)	//TODO set to null
-		{
-			return;
-		}
-		
-		rbInsertFixUp(insertedNode);						// maintain property of red-black tree
+		rbInsertFixUp(insertedNode);					// maintain property of red-black tree
 	}
-	
+
+	/*
+	 * Description: pivots left around link
+	 * 
+	 * @param	rotate	the node that pivots
+	 */
 	private void leftRotate(Node rotate)
 	{
 		Node holdRotate = rotate.rightChild;			// set holdRotate
@@ -266,7 +235,7 @@ public class RedBlackTree implements Dictionary{
 		
 		holdRotate.parent = rotate.parent;				// links rotate's parents to holdRotate's
 		
-		if (rotate.parent == tNil)					//TODO set to null
+		if (rotate.parent == tNil)
 		{
 			this.tRoot = holdRotate;
 		}
@@ -283,9 +252,14 @@ public class RedBlackTree implements Dictionary{
 		rotate.parent = holdRotate;
 	}
 	
+	/*
+	 * Description: pivots right around link
+	 * 
+	 * @param	rotate	the node that pivots
+	 */
 	private void rightRotate(Node rotate)
 	{
-		Node holdRotate = rotate.leftChild;			// set holdRotate
+		Node holdRotate = rotate.leftChild;				// set holdRotate
 		rotate.leftChild = holdRotate.rightChild;		// turn holdRotate's left subtree into rotate's right subtree
 		
 		if (holdRotate.rightChild != tNil)
@@ -295,7 +269,7 @@ public class RedBlackTree implements Dictionary{
 		
 		holdRotate.parent = rotate.parent;				// links rotate's parents to holdRotate's
 		
-		if (rotate.parent == tNil)						// TODO set to null
+		if (rotate.parent == tNil)
 		{
 			this.tRoot = holdRotate;
 		}
@@ -311,159 +285,202 @@ public class RedBlackTree implements Dictionary{
 		holdRotate.rightChild = rotate;					// put rotate on holdRotate's left
 		rotate.parent = holdRotate;
 	}
-	
-	private void rbDeleteFixUp(Node x)
+
+	/*
+	 * Description: to move subtrees around within the RBT
+	 * 
+	 * @param	deleted	the subtree rooted at this node
+	 * 			replace	the subtree that was deleted
+	 */
+	private void rbTransplant(Node deleted, Node replace)
 	{
-		Node w;
-		
-		while (x != tRoot &&  x.colour == BLACK)
+		if (deleted.parent == tNil)							// handle if deleted subtree is root of  RBT
 		{
-			if (x == x.parent.leftChild)
-			{
-				w = x.parent.rightChild;
-				
-				if (w.colour == RED)
-				{
-					w.colour = BLACK;
-					x.parent.colour = RED;
-					leftRotate(x.parent);
-					w = x.parent.rightChild;
-				}
-				
-				if (w.leftChild.colour == BLACK && w.rightChild.colour == BLACK)
-				{
-					w.colour = RED;
-					x = x.parent;
-				}
-				else if (w.rightChild.colour == BLACK)
-				{
-					w.leftChild.colour = BLACK;
-					w.colour = RED;
-					rightRotate(w);
-					w = x.parent.rightChild;
-				}
-				
-				w.colour = x.parent.colour;
-				x.parent.colour = BLACK;
-				w.rightChild.colour = BLACK;
-				leftRotate (x.parent);
-				x = tRoot;
-			}
-			else
-			{
-				w = x.parent.leftChild; 
-				
-				if (w.colour == RED)
-				{
-					w.colour = BLACK;
-					x.parent.colour = RED;
-					rightRotate(x.parent);
-					w = x.parent.leftChild;
-				}
-				
-				if (w.rightChild.colour == BLACK && w.leftChild.colour == BLACK)
-				{
-					w.colour = RED;
-					x = x.parent;
-				}
-				else if (w.leftChild.colour == BLACK)
-				{
-					w.rightChild.colour = BLACK;
-					w.colour = RED;
-					leftRotate(w);
-					w = x.parent.leftChild;
-				}
-				
-				w.colour = x.parent.colour;
-				x.parent.colour = BLACK;
-				w.leftChild.colour = BLACK;
-				rightRotate (x.parent);
-				x = tRoot;
-			}
+			tRoot = replace;
 		}
-		
-		x.colour = BLACK;
-	}
-	
-	@Override
-	public void delete(int key) 
-	{
-		Node z = iterativeTreeSearch(key);
-		
-		Node y = z;
-		Node x;
-		
-		int originalColour = y.colour;
-		
-		if (z.leftChild == tNil)
+		else if (deleted == deleted.parent.leftChild)		// if deleted is a left child, update parent
 		{
-			x =z.rightChild;
-			rbTransplant(z, z.rightChild);
-		}
-		else if (z.rightChild == tNil)
-		{
-			x = z.leftChild;
-			rbTransplant(z, z.leftChild);
+			deleted.parent.leftChild = replace;
 		}
 		else
 		{
-			y = treeMinimum(z.rightChild);
-			originalColour = y.colour;
-			x = y.rightChild;
-			
-			if (y.parent == z)
+			deleted.parent.rightChild = replace;			// if deleted is a right child, update parent
+		}
+		
+		replace.parent = deleted.parent;					// take parent of deleted and assign to replacement
+	}
+	
+	/*
+	 * Description: restores RBT properties after deletion
+	 * 
+	 * @param	fix	where RBT properties must be restored at
+	 */
+	private void rbDeleteFixUp(Node fix)
+	{
+		Node tmpNode;
+		
+		while (fix != tRoot &&  fix.colour == BLACK)
+		{
+			if (fix == fix.parent.leftChild)
 			{
-				x.parent = y;
+				tmpNode = fix.parent.rightChild;
+				
+				if (tmpNode.colour == RED)
+				{
+					/* CASE 1 */
+					tmpNode.colour = BLACK;
+					fix.parent.colour = RED;
+					leftRotate(fix.parent);
+					tmpNode = fix.parent.rightChild;
+				}
+				
+				if (tmpNode.leftChild.colour == BLACK && tmpNode.rightChild.colour == BLACK)
+				{
+					/* CASE 2 */
+					tmpNode.colour = RED;
+					fix = fix.parent;
+				}
+				else if (tmpNode.rightChild.colour == BLACK)
+				{
+					/* CASE 3 */
+					tmpNode.leftChild.colour = BLACK;
+					tmpNode.colour = RED;
+					rightRotate(tmpNode);
+					tmpNode = fix.parent.rightChild;
+				}
+				
+				/* CASE 4 */
+				tmpNode.colour = fix.parent.colour;
+				fix.parent.colour = BLACK;
+				tmpNode.rightChild.colour = BLACK;
+				leftRotate (fix.parent);
+				fix = tRoot;
 			}
 			else
 			{
-				rbTransplant(y,y.rightChild);
-				y.rightChild = z.rightChild;
-				y.rightChild.parent = y;
+				tmpNode = fix.parent.leftChild; 
+				
+				if (tmpNode.colour == RED)
+				{
+					/* CASE 1 */
+					tmpNode.colour = BLACK;
+					fix.parent.colour = RED;
+					rightRotate(fix.parent);
+					tmpNode = fix.parent.leftChild;
+				}
+				
+				if (tmpNode.rightChild.colour == BLACK && tmpNode.leftChild.colour == BLACK)
+				{
+					/* CASE 2 */
+					tmpNode.colour = RED;
+					fix = fix.parent;
+				}
+				else if (tmpNode.leftChild.colour == BLACK)
+				{
+					/* CASE 3 */
+					tmpNode.rightChild.colour = BLACK;
+					tmpNode.colour = RED;
+					leftRotate(tmpNode);
+					tmpNode = fix.parent.leftChild;
+				}
+				
+				/* CASE 4 */
+				tmpNode.colour = fix.parent.colour;
+				fix.parent.colour = BLACK;
+				tmpNode.leftChild.colour = BLACK;
+				rightRotate (fix.parent);
+				fix = tRoot;
 			}
-			rbTransplant(z, y);
-			y.leftChild = z.leftChild;
-			y.leftChild.parent = y;
-			y.colour = z.colour;			
+		}
+		
+		fix.colour = BLACK;
+	}
+	
+	/*
+	 * Description: deleting node from RBT
+	 * 
+	 * @param	key	the value of the node to be removed from the tree
+	 */
+	@Override
+	public void delete(int key) 
+	{
+		Node deleteNode = iterativeTreeSearch(key);				// find node of key to be deleted
+		
+		Node holdNode = deleteNode;								// to hold deletedNode data
+		Node fillNode;											// node to fill deleted space
+		
+		int originalColour = holdNode.colour;
+		
+		if (deleteNode.leftChild == tNil)
+		{
+			fillNode =deleteNode.rightChild;
+			rbTransplant(deleteNode, deleteNode.rightChild);
+		}
+		else if (deleteNode.rightChild == tNil)
+		{
+			fillNode = deleteNode.leftChild;
+			rbTransplant(deleteNode, deleteNode.leftChild);
+		}
+		else
+		{
+			holdNode = treeMinimum(deleteNode.rightChild);
+			originalColour = holdNode.colour;
+			fillNode = holdNode.rightChild;
+			
+			if (holdNode.parent == deleteNode)
+			{
+				fillNode.parent = holdNode;
+			}
+			else
+			{
+				rbTransplant(holdNode,holdNode.rightChild);
+				holdNode.rightChild = deleteNode.rightChild;
+				holdNode.rightChild.parent = holdNode;
+			}
+			rbTransplant(deleteNode, holdNode);
+			holdNode.leftChild = deleteNode.leftChild;
+			holdNode.leftChild.parent = holdNode;
+			holdNode.colour = deleteNode.colour;			
 		}
 		
 		if (originalColour == BLACK)
 		{
-			rbDeleteFixUp(x);
+			rbDeleteFixUp(fillNode);							// restore RBT properties
 		}
 	}
 
+	/*
+	 * Description: determines if key is a member of RBT
+	 * 
+	 * @param	key		value of node to search for in RBT
+	 * 
+	 * @return	true	if it exits in RBT	
+	 */
 	@Override
 	public boolean member(int key) 
 	{
-		if (iterativeTreeSearch(key) != tNil)
+		if (iterativeTreeSearch(key) != tNil)			// if key is in the RBT and not tNil
 		{
-			System.out.printf("member is in tree\n");				//TODO delete
 			return true;
 		}
 		return false;
 	}
 	
 	/*
-	 * Description: page 288 used for printing binary search tree in sorted order
-	 * 	- visit and print the root node
-	 * 	- transverse the left sub tree (recursively call  inorder( root > left)
-	 * 	- transverse the right sub tree (recursively call inorder (root > right)
+	 * Description: prints and creates pre-order tree walk string of the RBT
+	 * 
+	 * @param	startingNode		node to start at
+	 * 
+	 * @return addressColourKey		string that has the address, colour, and key of the node
 	 */
 	private String preOrderTreeWalk(Node startingNode)
 	{
-		String addressColourKey = "";
+		String addressColourKey = "";				// initializing string
 		
-		if(empty())									// returns empty string if tree is empty
-		{
-			return addressColourKey;
-		}
-		
-		
-			if (startingNode != null )
+			if (startingNode != tNil)				// does not include external nodes
 			{	
 				String colour;
-				if (startingNode.colour == 0)
+				if (startingNode.colour == 0)		// converting colour for nodes to string
 				{
 					colour = "red";
 				}
@@ -472,46 +489,48 @@ public class RedBlackTree implements Dictionary{
 					colour = "black";
 				}
 				
-				addressColourKey ="*"+findAddress(startingNode)+":"+ colour +":" + startingNode.key ;
+				addressColourKey ="*"+findAddress(startingNode)+":"+ colour +":" + startingNode.key + "\n";		// concatenation of address, colour, and key
 				
-				if (startingNode != tNil) 
-				{
-				//System.out.printf("%s:%s:*%s\n", startingNode.key, colour, findAddress(startingNode));	
-				System.out.printf("%s\n", addressColourKey);
-				}
+				redBlackTree += addressColourKey;					// concatenation for toString method
 				
-				preOrderTreeWalk(startingNode.leftChild);
-				preOrderTreeWalk(startingNode.rightChild);
+				preOrderTreeWalk(startingNode.leftChild);			// recursion until finished all left children
+				preOrderTreeWalk(startingNode.rightChild);			// recursion until finished all right children
 			}
-			
-	
 		
+			
 		return addressColourKey;
 	}
 	
+	/*
+	 * Description: finds address of node
+	 * 
+	 * @param	node			the node to find the address of
+	 * 
+	 * @return	finalAddress	the address of the node
+	 */
 	private String findAddress(Node node)
 	{
-		String address = "";						// starting at root
+		String address = "";									// starting at root
 		
 		Node tmp = node;
 		
-		while (tmp != tRoot && tmp.parent != null)
+		while (tmp != tRoot)
 		{
-			if (tmp == tmp.parent.rightChild)		// check if node is right child of root
+			if (tmp == tmp.parent.rightChild)					// check if node is right child of root
 			{
-				address = address.concat("R");
+				address = address.concat("R");					// node is a right child
 			}
 			else
 			{
-				address = address.concat("L");
+				address = address.concat("L");					// node is a left child
 			}
-			tmp = tmp.parent;	
+			tmp = tmp.parent;									// loop until tmp.parent is tRoot or tNil
 		}
 		
-		//CITATION: https://devqa.io/reverse-string-java/
+		/* CITATION: https://devqa.io/reverse-string-java/ */
 		String finalAddress = "";
 		
-		for (char c : address.toCharArray())			// reversing string for final address
+		for (char c : address.toCharArray())					// reversing string for final address
 		{
 			finalAddress = c + finalAddress;
 		}
@@ -519,14 +538,28 @@ public class RedBlackTree implements Dictionary{
 		return finalAddress;
 	}
 	
+	/*
+	 * Description: displays	RBT address:colour:key
+	 * 
+	 * @return	redBlackTree	string of all the nodes in the tree
+	 */
 	@Override
-	public String toString()
-	{
-		Node startingNode = tRoot;
-	
-		String addressColourKey = preOrderTreeWalk(startingNode);
+	public String toString()			
+	{	
+		if(toStringCount != 0)			
+		{
+			redBlackTree = "";			// clear string if toString has been called previously
+		}
 		
-		return addressColourKey;	
+		if(empty())						// returns empty string if tree is empty
+		{
+			return redBlackTree;
+		}
+		
+		preOrderTreeWalk(tRoot);		// build string in pre-order tree walk
+		
+		toStringCount++;				// indicate that toString has been called
+		return redBlackTree;	
 	}
 	
 	
