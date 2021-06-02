@@ -15,9 +15,12 @@
 #include <unistd.h>
 #include <math.h>
 
+
 #define MY_POS_INFINITY 9999999
 #define MY_NEG_INFINITY -9999999
 
+char screenOutput[40][80];
+int screenCurrentRow=0;
 
 struct UserSetup
 {
@@ -169,6 +172,7 @@ void initializeGame (struct UserSetup setup,
 
 }
 
+
 /*
  * Description: prints the hints
  *
@@ -178,15 +182,41 @@ void initializeGame (struct UserSetup setup,
  * 			S is the cumulative score
  * 			T is the remaining time
  */
-void displayHints(struct GameTime gameTime, struct AllScores score)
+void displayHints(struct UserSetup setup, struct GameTime gameTime, struct AllScores score, char userGuess[setup.rows][setup.columns])
 {
-	printf("  B   W   R   S   T\n");
-	printf(" %d  %d  %d  %.2f  %d:%02d\n", score.B,
-										   score.W,
-										   score.numOfTrials,
-										   score.cumScore,
-										   gameTime.minutes,
-										   gameTime.seconds);
+
+	char userInputSpaceStr[80];
+	char userInputStr[80];
+
+	userInputSpaceStr[0] = '\0';
+	userInputStr[0] = '\0';
+
+	for (int i=0; i < setup.rows*setup.columns; i++)
+	{
+		strcat( userInputSpaceStr, "  ");
+		userInputStr[2*i] = userGuess[setup.rows][setup.columns];
+		userInputStr[2*i+1] = ' ';
+		userInputStr[2*i+2] = '\0';
+	}
+
+	//timeToString( timeRemaining, timeStr);
+
+	// generate screenOuput for the last results
+	sprintf(screenOutput[screenCurrentRow++], "%s  B   W   R   S   T\n", userInputSpaceStr);
+	sprintf(screenOutput[screenCurrentRow++], "%s %d  %d  %d  %.2f  %d:%d\n", userInputStr,
+																			score.B,
+																		 score.W,
+																		 score.numOfTrials,
+																		 score.cumScore,
+																		 gameTime.minutes,
+																		 gameTime.seconds);
+
+	//system("clear"); TODO uncomment
+
+	for (int i = 0; i < screenCurrentRow; i++)		// print all hints for this game
+	{
+		printf( "%s\n", screenOutput[i] );
+	}
 }
 
 void findBW(struct UserSetup setup,
@@ -712,7 +742,7 @@ int main(int argc, char *argv[])
 			else
 			{
 				gameOver = calculateScore(mySetup, code, userGuess, &myGameTime, &myScores);
-				displayHints(myGameTime, myScores);
+				displayHints(mySetup, myGameTime, myScores, userGuess);
 				if (gameOver)
 				{
 					printf("Final Score: %.2f\n", myScores.finalScore);
