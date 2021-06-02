@@ -1,5 +1,5 @@
 /*
- * updatedMastermind.c
+ * mastermind.c
  *
  *  Created on: Jun. 1, 2021
  *      Author: jadal
@@ -15,13 +15,19 @@
 #include <unistd.h>
 #include <math.h>
 
-
 #define MY_POS_INFINITY 999999
 #define MY_NEG_INFINITY -999999
 
-char screenOutput[40][80];
-int screenCurrentRow=0;
+char startUpOutput[100][100];				// buffer to  hold game start up outputs
+int startUpRow = 0;							// counts rows for buffer
+char screenOutput[40][80];					// buffer to  hold in game screen outputs
+int screenCurrentRow=0;						// counts rows for buffer
+char gameOverOutput[100][100];				// buffer to  hold end game outputs
+int gameOverRow = 0;						// counts rows for buffer
 
+/*
+ * Description: struct to hold all user input parameters
+ */
 struct UserSetup
 {
 	char playerName[20];					// command line input player name
@@ -33,6 +39,9 @@ struct UserSetup
 	int	mode;
 };
 
+/*
+ * Description: struct to hold all time variables for game
+ */
 struct GameTime
 {
 	time_t startTime;
@@ -42,6 +51,9 @@ struct GameTime
 	int seconds;
 };
 
+/*
+ * Description: struct to hold all scores for game
+ */
 struct AllScores
 {
 	int B;
@@ -54,11 +66,10 @@ struct AllScores
 /*
  * Description: Random number generator
  *
- * @param	lowerBound for the random number generator
- * 			upperBound for the random number generator
- * 			neg TODO
- *
- * @returns random integer within the bounds
+ * @param	lowerBound 	for the random number generator
+ * 			upperBound 	for the random number generator
+ * 			neg			did not do as Prof said this was unnecessary in lecture
+ * @return random integer within the bounds
  */
 int randomNum (int lowerBound, int upperBound)
 {
@@ -66,7 +77,11 @@ int randomNum (int lowerBound, int upperBound)
 }
 
 /*
- * Description:  returns a letter (color) based on an integer value n
+ * Description:  returns a letter (colour) based on an integer value n
+ *
+ * @param 	n			to randomize colour select
+ *
+ * @return	newColour	randomized colour
  */
 char colour(int n)
 {
@@ -74,42 +89,38 @@ char colour(int n)
 
 	return newColour;
 }
+
 /*
- * Description: to find how much time has elapsed
+ * Description: to determine time elapsed
  *
- * CITATION: https://www.techiedelight.com/find-execution-time-c-program/
+ * @param	maxTimeSec	time specified by user in seconds
+ * 			gameTime	struct to store changes to time
+ *
  */
 void findTime(int maxTimeSec, struct GameTime *gameTime)
 {
 	time_t currentTime;
-	time(&currentTime);
+	time(&currentTime);												// gets current time
 
-	time_t temp = difftime(currentTime, gameTime->startTime);
+	time_t temp = difftime(currentTime, gameTime->startTime);		// calculates time difference
 
-	gameTime->timeRemaining = maxTimeSec - temp;
-
-
-/*
-	if (gameTime->timeRemaining > 0)
-	{
-		gameTime->minutes = gameTime->timeRemaining / 60;
-		gameTime->seconds = (gameTime->timeRemaining - (gameTime->minutes * 60));
-	}
-	else
-	{
-		gameTime->timeRemaining = 0;
-	}
-*/
+	gameTime->timeRemaining = maxTimeSec - temp;					// calculates time remaining
 
 }
 
-void timeToString(double timeInSec, char *timeStr)  // convert sec time to mm:ss format
+/*
+ * Description: converts timeRemaining into a mm:ss format to be used for log and transcripe functions
+ *
+ * @param	timeInSec	timeRemaining in seconds
+ * 			timeStr		formatted time in string
+ */
+void timeToString(double timeInSec, char *timeStr)
 {
-	if (timeInSec == MY_POS_INFINITY)
+	if (timeInSec == MY_POS_INFINITY)		// TODO fix infinity
 	{
 		strcpy(timeStr, "INFINITY");
 	}
-	else if (timeInSec > 0)
+	else if (timeInSec > 0)					// if maxTime is not exceeded
 	{
 		int minutes = 0;
 		int seconds = 0;
@@ -117,89 +128,109 @@ void timeToString(double timeInSec, char *timeStr)  // convert sec time to mm:ss
 		minutes = timeInSec / 60;
 		seconds = timeInSec- (minutes * 60);
 
-		sprintf(timeStr, "%02d:%02d", minutes, seconds);
+		sprintf(timeStr, "%02d:%02d", minutes, seconds); // string together minutes and seconds
 	}
 	else
 	{
-		strcpy(timeStr, "00:00");
+		strcpy(timeStr, "00:00");		// set time to 00:00 TODO do i need this?
 	}
 }
 
+/*
+ * Description: initializes code, time, scores, and mode
+ *
+ * @param	setup		prints starting messages and used to initialize code
+ * 			code		creates randomized code
+ * 			*gameTime	resets gameTime if game is restarted
+ * 			*scores		resets scores if game is restarted
+ */
 void initializeGame (struct UserSetup setup,
 					 char code[setup.rows][setup.columns],
 					 struct GameTime *gameTime,
 					 struct AllScores *scores)
 {
-	time(&gameTime->startTime);
+	time(&gameTime->startTime);				// time stamps start of game
 
+	/* initializing struct gameTime */
 	gameTime->timeRemaining = 0;
 	gameTime->hours = 0;
 	gameTime->minutes = 0;
 	gameTime->seconds = 0;
 
+	/* initializing struct scores */
 	scores->B = 0;
 	scores->W = 0;
 	scores->numOfTrials = 0;
 	scores->cumScore = 0;
 	scores->finalScore = 0;
 
+	/* generating random seed for game*/
 	time_t t;
 	srand( (unsigned) time(&t) );
 
-	screenCurrentRow = 0;					// reset the display buffer
+	/* resets display buffers */
+	screenCurrentRow = 1;
+	startUpRow = 0;
+	gameOverRow = 0;
 
 	if (setup.mode == 1)
 	{
+		sprintf(startUpOutput[startUpRow++], "Hello %s!\nRunning Mastermind in test mode\n", setup.playerName);
 		printf("Hello %s!\nRunning Mastermind in test mode\n", setup.playerName);
 	}
 	else
 	{
+		sprintf(startUpOutput[startUpRow++], "Hello %s!\nRunning Mastermind in play mode\n", setup.playerName);
 		printf("Hello %s!\nRunning Mastermind in play mode\n", setup.playerName);
 	}
 
+	/* generates randomized colour code and fills code array */
 	for (int i = 0; i < setup.rows; i++ )
 	{
 		for (int j = 0; j < setup.columns; j++)
 		{
-			int randNum = randomNum( 0, setup.numOfColours - 1);
-			code[i][j] = colour(randNum);
-			printf(" %c ", code[i][j]);					//TODO delete
+			int randNum = randomNum( 0, setup.numOfColours - 1);	// upper/lower bound based on user input
+			code[i][j] = colour(randNum);							// filling code with randomized colours
 		}
 	}
-	printf("\n");										//TODO delete
 
 	if (setup.mode == 1)
 	{
-			printf("Hidden code is: ");
+		sprintf(startUpOutput[startUpRow++],"Hidden code is: ");	// for transcripe game
+		printf("Hidden code is: ");
 
+		/* displays hidden code for test mode */
 			for (int i = 0; i < setup.rows; i++ )
 			{
 				for (int j = 0; j < setup.columns; j++)
 				{
-					printf(" %c ", code[i][j]);			//TODO fix print for when N > 1 lines
+					sprintf(startUpOutput[startUpRow++]," %c ", code[i][j]);
+					printf(" %c ", code[i][j]);
 				}
+				sprintf(startUpOutput[startUpRow++],"\n");
 				printf("\n");
 			}
 		}
 
-		printf("Start cracking...\n");
+	sprintf(startUpOutput[startUpRow++],"Start cracking...\n");
+	printf("Start cracking...\n");
 
-		for (int i = 0; i < setup.rows; i++ )
+	/* prints initial user interface */
+	for (int i = 0; i < setup.rows; i++ )
+	{
+		for (int j = 0; j < setup.columns; j++)
 		{
-			for (int j = 0; j < setup.columns; j++)
-			{
-				printf("- ");
-
-			}
-			if(i == 0)
-			{
-				printf("  B   W   R   S   T\n");
-			}
-			printf("\n");
+			printf("- ");
 		}
 
-}
+		if(i == 0)
+		{
+			printf("  B   W   R   S   T\n");
+		}
 
+		printf("\n");
+	}
+}
 
 /*
  * Description: prints the hints
@@ -212,13 +243,14 @@ void initializeGame (struct UserSetup setup,
  */
 void displayHints(struct UserSetup setup, struct GameTime gameTime, struct AllScores score, char userGuess[setup.rows][setup.columns])
 {
+	char userInputSpaceStr[80];								// to hold cracked code dashes
+	char userInputStr[80];									// to hold userGuess
 
-	char userInputSpaceStr[80];
-	char userInputStr[80];
+	userInputSpaceStr[0] = '\0';							// initialize to null
+	userInputStr[0] = '\0';									// initialize to null
 
-	userInputSpaceStr[0] = '\0';
-	userInputStr[0] = '\0';
 
+	/* to reprint user guess with hints */
 	for (int i=0; i < setup.rows*setup.columns; i++)
 	{
 		strcat( userInputSpaceStr, "- ");
@@ -227,12 +259,12 @@ void displayHints(struct UserSetup setup, struct GameTime gameTime, struct AllSc
 		userInputStr[2*i+2] = '\0';
 	}
 
-	// convert time in sec to mm:ss format
+	/* convert time in sec to mm:ss format  */
 	char timeStr[20];
 	timeToString(gameTime.timeRemaining, timeStr);
 
-	// generate screenOuput for the last results
-	sprintf(screenOutput[screenCurrentRow++], "%s  B  W  R  S    T\n", userInputSpaceStr);
+	/* generate screenOuput for the last results */
+	sprintf(screenOutput[0], "%s  B  W  R  S    T\n", userInputSpaceStr);
 	sprintf(screenOutput[screenCurrentRow++], "%s %2d %2d %2d  %4.2f %s\n", userInputStr,
 																			score.B,
 																		 score.W,
@@ -240,7 +272,7 @@ void displayHints(struct UserSetup setup, struct GameTime gameTime, struct AllSc
 																		 score.cumScore,
 																		 timeStr);
 
-	//system("clear"); TODO uncomment
+	//system("clear");   //TODO uncomment
 
 	for (int i = 0; i < screenCurrentRow; i++)		// print all hints for this game
 	{
@@ -248,13 +280,21 @@ void displayHints(struct UserSetup setup, struct GameTime gameTime, struct AllSc
 	}
 }
 
+/*
+ * Description: finding B and W scores
+ *
+ * @param	setup		provides user input parameters
+ * 			code		holds code
+ * 			userGuess	holds user guess
+ * 			*score		updates score
+ */
 void findBW(struct UserSetup setup,
 			char code[setup.rows][setup.columns],
 			char userGuess[setup.rows][setup.columns],
 			struct AllScores *score)
 {
-	char tmpCode[setup.rows][setup.columns];
-	char tmpUserGuess[setup.rows][setup.columns];
+	char tmpCode[setup.rows][setup.columns];				// tmp code to prevent override of code
+	char tmpUserGuess[setup.rows][setup.columns];			// tmp userInput to prevent override of userGuess
 
 	score->B = 0;
 	score->W = 0;
@@ -279,7 +319,7 @@ void findBW(struct UserSetup setup,
 		{
 			for (int j = 0; j < setup.columns; j++)
 			{
-				if (tmpUserGuess[i][j] == tmpCode[i][j])			//TODO fix this for row checking bc user input is 1d array not 2d
+				if (tmpUserGuess[i][j] == tmpCode[i][j])
 				{
 					score->B++;
 					tmpUserGuess[i][j] = '0';						// set to 0 to avoid future match
@@ -333,20 +373,23 @@ bool calculateScore(struct UserSetup setup,
 
 	if (score->B == setup.rows*setup.columns)
 	{
-		printf("Cracked!\n");
+		//sprintf(gameOverOutput[gameOverRow++],"Cracked!\n");
+		//printf("Cracked!\n");
 		return true;
 	}
 
 	if (score->numOfTrials > setup.maxTrials- 1)
 	{
 		score->finalScore = score->finalScore * -1;
-		printf("Trials exceeded.\n");
+		//sprintf(gameOverOutput[gameOverRow++],"Trials exceeded.\n");
+		//printf("Trials exceeded.\n");
 		return true;
 	}
 
 	if(gameTime->timeRemaining < 0)
 	{
-		printf("Time exceeded.\n");
+		//sprintf(gameOverOutput[gameOverRow++],"Trials exceeded.\n");
+		//printf("Time exceeded.\n");
 		return true;
 	}
 	return false;
@@ -365,7 +408,7 @@ void logScore(struct UserSetup setup, struct AllScores score, struct GameTime ga
 	/* TODO users who do not finish the game are not included in the returned list */
 
 	FILE *fp;
-	fp = fopen("mastermind.log", "ab+");											// creates/ adds to log file
+	fp = fopen("mastermind.log", "a+");											// creates/ adds to log file
 	fprintf(fp,"%s %f %d:%d\n", setup.playerName,
 								score.finalScore,
 								gameTime.minutes,
@@ -376,18 +419,49 @@ void logScore(struct UserSetup setup, struct AllScores score, struct GameTime ga
  * Description:addition, a transcript file is created that
  *  records the game played (the steps in each move as shown on the screen
  */
-void transcribeGame(struct UserSetup setup,
-					char code[setup.rows][setup.columns])
+void transcripeGame(struct UserSetup setup,
+					char code[setup.rows][setup.columns],struct GameTime gameTime)
 {
-	//hours = startTime / 3600;
-	//minutes = (startTime -(3600* hours)) / 60;
-	//seconds = (startTime -(3600* hours) - (minutes * 60));
-/*
-	FILE *fp;
-	char transcribeName = "%s_%02d:%02d:%02d", *playerName, hours, seconds, minutes;
-	fp = fopen(transcribeName, "a+");
+	//TODO didnt use *code as specified in assignment
 
-*/
+	char timeStr[40];
+
+	//CITATION: https://en.wikibooks.org/wiki/C_Programming/time.h/time_t
+	time_t     now;
+	    struct tm *ts;
+	    char  testBuf[80];
+
+	  /* Get the current time */
+	  now = time(NULL);
+
+	ts = localtime(&now);
+
+	strftime(testBuf, sizeof(testBuf), "%H-%M-%S", ts);
+	puts(testBuf);
+
+	sprintf(timeStr, "%s_%s", setup.playerName, testBuf);
+
+	char buf[0x100];
+	snprintf(buf, sizeof(buf), "%s.txt", timeStr);
+
+	FILE *fp;
+	fp = fopen(buf, "a+");
+	for (int i = 0; i < startUpRow; i++)		// print all hints for this game
+	{
+		fprintf(fp, "%s", startUpOutput[i] );
+	}
+
+	for (int i = 0; i < screenCurrentRow; i++)		// print all hints for this game
+	{
+		fprintf(fp, "%s", screenOutput[i] );
+	}
+
+	for (int i = 0; i < gameOverRow; i++)		// print all hints for this game
+		{
+			fprintf(fp, "%s", gameOverOutput[i] );
+		}
+
+
 }
 
 void exitGame(struct UserSetup setup,
@@ -396,7 +470,7 @@ void exitGame(struct UserSetup setup,
 		struct GameTime gameTime)
 {
 	logScore(setup, score, gameTime);
-	transcribeGame(setup, code);
+	transcripeGame(setup, code, gameTime);
 }
 
 bool checkUserQuit()
@@ -432,8 +506,6 @@ bool checkUserQuit()
  */
 void displayTop(int numOfTop)
 {
-	printf( "Display Top - TODO\n");
-
 		FILE *fptr;
 
 		char tmpName[20];
@@ -613,12 +685,10 @@ bool getGuessOrCommands(struct UserSetup setup,
 
 	if (userGuess[0][0] == '$')
 	{
-		printf("----> in quit\n");
 		return true;
 	}
 	else
 	{
-		printf("----> in guessed\n");
 		return false;
 	}
 }
@@ -694,7 +764,7 @@ int main(int argc, char *argv[])
 	while (!userInputValid)
 	{
 		printf( "Please enter Player Name, N, M, C, R, and T values\n" );
-		scanf("%s %d %d %d %d %d",  mySetup.playerName,						//TODO delete
+		scanf("%s %d %d %d %d %d",  mySetup.playerName,
 									&mySetup.rows,
 									&mySetup.columns,
 									&mySetup.numOfColours,
@@ -711,19 +781,12 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	printf("----> %s %d %d %d %d %d\n", mySetup.playerName,						//TODO delete
-										mySetup.rows,
-										mySetup.columns,
-										mySetup.numOfColours,
-										mySetup.maxTrials,
-										mySetup.maxTime);
-
 	bool modeSelect = false;
 	do
 	{
 		printf("Please select a mode: Play (0) or Test (1)\n");
-		scanf("%d", &mySetup.mode);				//TODO uncomment
-		//mode = 1;								//TODO delete
+		scanf("%d", &mySetup.mode);
+
 
 //TODO mode input validation check for non integers
 
@@ -767,6 +830,7 @@ int main(int argc, char *argv[])
 				myScores.finalScore = MY_NEG_INFINITY;
 				myGameTime.minutes = 99;
 				myGameTime.seconds = 99;			//TODO fix to positive infinity
+
 			}
 			else
 			{
@@ -774,15 +838,41 @@ int main(int argc, char *argv[])
 				displayHints(mySetup, myGameTime, myScores, userGuess);
 				if (gameOver)
 				{
+					if (myScores.B == mySetup.rows*mySetup.columns)
+						{
+							sprintf(gameOverOutput[gameOverRow++],"Cracked!\n");
+							printf("Cracked!\n");
+
+						}
+
+						if (myScores.numOfTrials > mySetup.maxTrials- 1)
+						{
+
+							sprintf(gameOverOutput[gameOverRow++],"Trials exceeded.\n");
+							printf("Trials exceeded.\n");
+
+						}
+
+						if(myGameTime.timeRemaining < 0)
+						{
+							sprintf(gameOverOutput[gameOverRow++],"Trials exceeded.\n");
+							printf("Time exceeded.\n");
+
+						}
+
+					sprintf(gameOverOutput[gameOverRow++],"Final Score: %.2f\n", myScores.finalScore);
 					printf("Final Score: %.2f\n", myScores.finalScore);
 					gameQuit = checkUserQuit();
 				}
 			}
 		} // not gameOver
-		//TODO call exitGame() to do log file
-		//TODO transcript
+
 		exitGame(mySetup, code, myScores, myGameTime);
-		checkDisplayTopBottom();
+		if (!gameQuit)
+		{
+			checkDisplayTopBottom();
+		}
+
 	} // not gameQuit
 
 	free(code);
