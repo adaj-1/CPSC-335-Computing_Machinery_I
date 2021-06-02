@@ -1,11 +1,19 @@
+/*
+ * CPSC 331: Assignment 2 Question 4
+ * ca.ucalgry.cpsc331.RedBlackTree
+ * 
+ * Author: Jada Li
+ * UCID: 30016807
+ */
+
 package ca.ucalgary.cpsc331;
 
 /*
- * 
+ * Description: Node class to build Red Black Tree
  */
 class Node
 {
-	int key;							// 
+	int key;							
 	int colour; 						// 0 for red, 1 for black
 
 	Node parent;
@@ -14,15 +22,16 @@ class Node
 }
 
 /*
- * 
+ * Description: Red Black Tree implementation
+ * Citation: Introduction To Algorithms 3rd Ed.
  */
 public class RedBlackTree implements Dictionary{
 	
-	static final int RED = 0;
-	static final int BLACK = 1;
+	static final int RED = 0;						// indicated red node
+	static final int BLACK = 1;						// indicates black node
 
-	private Node tRoot;
-	private Node tNil;
+	private Node tRoot;								// root node
+	private Node tNil;								// tnil node
 	private String redBlackTree = "";				// to hold redBlackTree format string
 	private int toStringCount = 0;					// to indicate whether toString has been run before
 	
@@ -99,7 +108,7 @@ public class RedBlackTree implements Dictionary{
 	/*
 	 * Description: restores Red-Black properties after rbInsert
 	 * 
-	 * @param	insertedNode to determine where to begin restoring RB properties
+	 * @param	insertedNode 	to determine where to begin restoring RB properties
 	 */
 	private void rbInsertFixUp(Node insertedNode)
 	{
@@ -118,7 +127,7 @@ public class RedBlackTree implements Dictionary{
 				
 				if (tmpNode.colour == RED)
 				{
-					/* CASE 1 */
+					/* CASE 1: insertedNode's right uncle tmpNode is RED */
 					insertedNode.parent.colour = BLACK;
 					tmpNode.colour = BLACK;
 					insertedNode.parent.parent.colour = RED;
@@ -126,13 +135,13 @@ public class RedBlackTree implements Dictionary{
 				}
 				else if (insertedNode == insertedNode.parent.rightChild)
 				{
-					/* CASE 2 */
+					/* CASE 2:insertedNode's right uncle tmpNode is BLACK and insertedNode is a right child */
 					insertedNode = insertedNode.parent;
-					leftRotate(insertedNode);	
+					leftRotate(insertedNode);
 				}
 				else
 				{
-					/* CASE 3 */
+					/* CASE 3: insertedNode's right uncle tmpNode is BLACK and insertedNode is a left child*/
 					insertedNode.parent.colour = BLACK;
 					insertedNode.parent.parent.colour = RED;
 					rightRotate(insertedNode.parent.parent);
@@ -144,7 +153,7 @@ public class RedBlackTree implements Dictionary{
 				
 				if (tmpNode.colour == RED)
 				{
-					/* CASE 1 */
+					/* CASE 1: insertedNode's left uncle tmpNode is RED */
 					insertedNode.parent.colour = BLACK;			
 					tmpNode.colour = BLACK;
 					insertedNode.parent.parent.colour = RED;
@@ -152,13 +161,13 @@ public class RedBlackTree implements Dictionary{
 				}
 				else if (insertedNode == insertedNode.parent.leftChild)
 				{
-					/* CASE 2 */
+					/* CASE 2:insertedNode's left uncle tmpNode is BLACK and insertedNode is a right child */
 					insertedNode = insertedNode.parent;
 					rightRotate(insertedNode);
 				} 
 				else
 				{
-					/* CASE 3 */
+					/* CASE 3: insertedNode's left uncle tmpNode is BLACK and insertedNode is a left child*/
 					insertedNode.parent.colour = BLACK;
 					insertedNode.parent.parent.colour = RED;
 					leftRotate(insertedNode.parent.parent);
@@ -171,7 +180,7 @@ public class RedBlackTree implements Dictionary{
 	/*
 	 * Description: to insert a new value into the RBT
 	 * 
-	 * @param	key	value to be inserted
+	 * @param	key		value to be inserted
 	 */
 	@Override
 	public void insert(int key) 
@@ -184,13 +193,13 @@ public class RedBlackTree implements Dictionary{
 		insertedNode.rightChild = tNil;
 	
 		Node tmpNode = tNil;					
-		Node rootNode = tRoot;					// TODO set to this.tRoot
-
+		Node rootNode = tRoot;					
+		
 		while (rootNode != tNil)
 		{
 			tmpNode = rootNode;
 			 
-			if (insertedNode.key < rootNode.key)
+			if (insertedNode.key < rootNode.key)		// determining placement of insertedNode based on key value
 			{
 				rootNode = rootNode.leftChild;
 			}
@@ -200,13 +209,13 @@ public class RedBlackTree implements Dictionary{
 			}
 		}
 		
-		insertedNode.parent = tmpNode;
+		insertedNode.parent = tmpNode;					// setting tmpNode as insertedNode's parent
 		
-		if (tmpNode == tNil)
+		if (tmpNode == tNil)							// if it is tNil, the insertedNode must be the tRoot
 		{
 			tRoot = insertedNode;
 		}
-		else if (insertedNode.key < tmpNode.key)
+		else if (insertedNode.key < tmpNode.key)		// determining if insertedNode is left or right child
 		{
 			tmpNode.leftChild = insertedNode;
 		}
@@ -221,7 +230,7 @@ public class RedBlackTree implements Dictionary{
 	/*
 	 * Description: pivots left around link
 	 * 
-	 * @param	rotate	the node that pivots
+	 * @param	rotate		the node that pivots
 	 */
 	private void leftRotate(Node rotate)
 	{
@@ -235,7 +244,7 @@ public class RedBlackTree implements Dictionary{
 		
 		holdRotate.parent = rotate.parent;				// links rotate's parents to holdRotate's
 		
-		if (rotate.parent == tNil)
+		if (rotate.parent == tNil)						
 		{
 			this.tRoot = holdRotate;
 		}
@@ -255,12 +264,12 @@ public class RedBlackTree implements Dictionary{
 	/*
 	 * Description: pivots right around link
 	 * 
-	 * @param	rotate	the node that pivots
+	 * @param	rotate		the node that pivots
 	 */
 	private void rightRotate(Node rotate)
 	{
 		Node holdRotate = rotate.leftChild;				// set holdRotate
-		rotate.leftChild = holdRotate.rightChild;		// turn holdRotate's left subtree into rotate's right subtree
+		rotate.leftChild = holdRotate.rightChild;		// turn holdRotate's right subtree into rotate's left subtree
 		
 		if (holdRotate.rightChild != tNil)
 		{
@@ -282,15 +291,15 @@ public class RedBlackTree implements Dictionary{
 			rotate.parent.leftChild = holdRotate;
 		}
 		
-		holdRotate.rightChild = rotate;					// put rotate on holdRotate's left
+		holdRotate.rightChild = rotate;					// put rotate on holdRotate's right
 		rotate.parent = holdRotate;
 	}
 
 	/*
 	 * Description: to move subtrees around within the RBT
 	 * 
-	 * @param	deleted	the subtree rooted at this node
-	 * 			replace	the subtree that was deleted
+	 * @param	deleted		the subtree rooted at this node
+	 * 			replace		the subtree that was deleted
 	 */
 	private void rbTransplant(Node deleted, Node replace)
 	{
@@ -313,7 +322,7 @@ public class RedBlackTree implements Dictionary{
 	/*
 	 * Description: restores RBT properties after deletion
 	 * 
-	 * @param	fix	where RBT properties must be restored at
+	 * @param	fix		where RBT properties must be restored at
 	 */
 	private void rbDeleteFixUp(Node fix)
 	{
@@ -323,11 +332,12 @@ public class RedBlackTree implements Dictionary{
 		{
 			if (fix == fix.parent.leftChild)
 			{
+				/* maintains right subtree */
 				tmpNode = fix.parent.rightChild;
 				
 				if (tmpNode.colour == RED)
 				{
-					/* CASE 1 */
+					/* CASE 1: fix's sibling tmpNode is red */
 					tmpNode.colour = BLACK;
 					fix.parent.colour = RED;
 					leftRotate(fix.parent);
@@ -336,20 +346,20 @@ public class RedBlackTree implements Dictionary{
 				
 				if (tmpNode.leftChild.colour == BLACK && tmpNode.rightChild.colour == BLACK)
 				{
-					/* CASE 2 */
+					/* CASE 2: fix's sibling tmpNode is BLACK and both of tmpNode's children are BLACK */
 					tmpNode.colour = RED;
 					fix = fix.parent;
 				}
 				else if (tmpNode.rightChild.colour == BLACK)
 				{
-					/* CASE 3 */
+					/* CASE 3: fix's sibling tmpNode is BLACK, tmpNode's left child is RED, and tmpNode's right child is BLACK */
 					tmpNode.leftChild.colour = BLACK;
 					tmpNode.colour = RED;
 					rightRotate(tmpNode);
 					tmpNode = fix.parent.rightChild;
 				}
 				
-				/* CASE 4 */
+				/* CASE 4: fix's sibling tmpNode is BLACK, and tmpNode's right child is RED */
 				tmpNode.colour = fix.parent.colour;
 				fix.parent.colour = BLACK;
 				tmpNode.rightChild.colour = BLACK;
@@ -357,12 +367,12 @@ public class RedBlackTree implements Dictionary{
 				fix = tRoot;
 			}
 			else
-			{
+			{	/* maintains left subtree */
 				tmpNode = fix.parent.leftChild; 
 				
 				if (tmpNode.colour == RED)
 				{
-					/* CASE 1 */
+					/* CASE 1: fix's sibling tmpNode is red */
 					tmpNode.colour = BLACK;
 					fix.parent.colour = RED;
 					rightRotate(fix.parent);
@@ -371,20 +381,20 @@ public class RedBlackTree implements Dictionary{
 				
 				if (tmpNode.rightChild.colour == BLACK && tmpNode.leftChild.colour == BLACK)
 				{
-					/* CASE 2 */
+					/* CASE 2: fix's sibling tmpNode is BLACK and both of tmpNode's children are BLACK */
 					tmpNode.colour = RED;
 					fix = fix.parent;
 				}
 				else if (tmpNode.leftChild.colour == BLACK)
 				{
-					/* CASE 3 */
+					/* CASE 3: fix's sibling tmpNode is BLACK, tmpNode's left child is RED, and tmpNode's right child is BLACK */
 					tmpNode.rightChild.colour = BLACK;
 					tmpNode.colour = RED;
 					leftRotate(tmpNode);
 					tmpNode = fix.parent.leftChild;
 				}
 				
-				/* CASE 4 */
+				/* CASE 4: fix's sibling tmpNode is BLACK, and tmpNode's right child is RED */
 				tmpNode.colour = fix.parent.colour;
 				fix.parent.colour = BLACK;
 				tmpNode.leftChild.colour = BLACK;
@@ -399,31 +409,31 @@ public class RedBlackTree implements Dictionary{
 	/*
 	 * Description: deleting node from RBT
 	 * 
-	 * @param	key	the value of the node to be removed from the tree
+	 * @param	key		the value of the node to be removed from the tree
 	 */
 	@Override
 	public void delete(int key) 
 	{
-		Node deleteNode = iterativeTreeSearch(key);				// find node of key to be deleted
+		Node deleteNode = iterativeTreeSearch(key);					// find node of key to be deleted
 		
-		Node holdNode = deleteNode;								// to hold deletedNode data
-		Node fillNode;											// node to fill deleted space
+		Node holdNode = deleteNode;									// to hold deletedNode data
+		Node fillNode;												// node to fill deleted space
 		
 		int originalColour = holdNode.colour;
 		
 		if (deleteNode.leftChild == tNil)
 		{
 			fillNode =deleteNode.rightChild;
-			rbTransplant(deleteNode, deleteNode.rightChild);
+			rbTransplant(deleteNode, deleteNode.rightChild);		// transplants right child to deleted node position
 		}
 		else if (deleteNode.rightChild == tNil)
 		{
 			fillNode = deleteNode.leftChild;
-			rbTransplant(deleteNode, deleteNode.leftChild);
+			rbTransplant(deleteNode, deleteNode.leftChild);			// transplants left child to deleted node position
 		}
 		else
 		{
-			holdNode = treeMinimum(deleteNode.rightChild);
+			holdNode = treeMinimum(deleteNode.rightChild);			// fills holdNode with the minimum key from deletedNode's right subtree
 			originalColour = holdNode.colour;
 			fillNode = holdNode.rightChild;
 			
@@ -433,19 +443,20 @@ public class RedBlackTree implements Dictionary{
 			}
 			else
 			{
-				rbTransplant(holdNode,holdNode.rightChild);
+				rbTransplant(holdNode,holdNode.rightChild);			// if holdNode.parent is not deleteNode, transplant holdNode to be the right child
 				holdNode.rightChild = deleteNode.rightChild;
 				holdNode.rightChild.parent = holdNode;
 			}
-			rbTransplant(deleteNode, holdNode);
-			holdNode.leftChild = deleteNode.leftChild;
+			
+			rbTransplant(deleteNode, holdNode);						// transplant deleteNode with holdNode
+			holdNode.leftChild = deleteNode.leftChild;				
 			holdNode.leftChild.parent = holdNode;
-			holdNode.colour = deleteNode.colour;			
+			holdNode.colour = deleteNode.colour;					// maintaining deleteNode colour		
 		}
 		
 		if (originalColour == BLACK)
 		{
-			rbDeleteFixUp(fillNode);							// restore RBT properties
+			rbDeleteFixUp(fillNode);								// restore RBT properties
 		}
 	}
 
