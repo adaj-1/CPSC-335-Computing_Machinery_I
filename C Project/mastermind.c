@@ -252,11 +252,14 @@ void initializeGame (char code[rows][columns])
 		for (int j = 0; j < columns; j++)
 		{
 			printf("- ");
+
+		}
+		if(i == 0)
+		{
+			printf("  B   W   R   S   T\n");
 		}
 		printf("\n");
 	}
-
-	printf("  B   W   R   S   T\n");
 }
 
 
@@ -449,9 +452,9 @@ void displayTop(int numOfTop)
 
 	for (int i = 0; i < numOfTop; i++)
 	{
-	      name[i][0] = 0;         // null string
-	      score[i] = -INFINITY; // TODO set to -infinite
-	      duration[i][0] = 0;
+		name[i][0] = 0;         // null string
+	    score[i] = -INFINITY; // TODO set to -infinite
+	    duration[i][0] = 0;
 	}
 
 	fptr = fopen("mastermind.log","r");
@@ -464,8 +467,6 @@ void displayTop(int numOfTop)
 
 	while (fscanf( fptr, "%s %f %s", tmpName, &tmpScore, tmpDuration ) == 3 )
 	{
-		printf("%s %f %s\n", tmpName, tmpScore, tmpDuration);
-
 		for (int i = 0; i < numOfTop; i++)
 		{
 			if (tmpScore > score[i])                  // add tmpScore to right position
@@ -480,6 +481,7 @@ void displayTop(int numOfTop)
 				score[i] = tmpScore;    // add the tmpScore to the right position
 				strcpy(name[i], tmpName);
 				strcpy(duration[i], tmpDuration);
+				break;					// break out of for loop
 	        }
 		}
 	}
@@ -488,6 +490,8 @@ void displayTop(int numOfTop)
     {
     	 printf("%s %f %s\n", name[i], score[i], duration[i]);
     }
+
+    //TODO do not print out minus infinity
 }
 
 
@@ -497,8 +501,58 @@ void displayTop(int numOfTop)
 void displayBottom(int numOfBottom)
 {
 	printf( "Display Bottom - TODO\n");
-}
 
+	FILE *fptr;
+
+	char tmpName[20];
+	float tmpScore;
+	char tmpDuration[10];
+
+	char name[numOfBottom][20];     // highest score in slot 0
+	double score[numOfBottom];
+	char duration[numOfBottom][10];
+
+	for (int i = 0; i < numOfBottom; i++)
+	{
+		name[i][0] = 0;         // null string
+	    score[i] = INFINITY; // TODO set to infinite
+	    duration[i][0] = 0;
+	}
+
+	fptr = fopen("mastermind.log","r");
+
+	if (fptr == NULL)
+	{
+		printf("Error!\n");
+		return;
+	}
+
+	while (fscanf( fptr, "%s %f %s", tmpName, &tmpScore, tmpDuration ) == 3 )
+	{
+		for (int i = 0; i < numOfBottom; i++)
+		{
+			if (tmpScore < score[i])                  // add tmpScore to right position
+	        {
+				for (int j = numOfBottom - 1; j > (i - 1); j--)
+				{
+					score[j] = score[j-1];       // shift the top scores down by 1
+					strcpy(name[j], name[j-1]);
+					strcpy(duration[j], duration[j-1]);
+				}
+					score[i] = tmpScore;    // add the tmpScore to the right position
+				strcpy(name[i], tmpName);
+				strcpy(duration[i], tmpDuration);
+				break;					// break out of for loop
+	        }
+		}
+	}
+
+	for (int i = 0; i < numOfBottom; i++)
+	{
+	   	 printf("%s %f %s\n", name[i], score[i], duration[i]);
+	}
+		//TODO infinity
+}
 
 
 bool getGuessInput(int rows, int columns,char userGuess[rows][columns])
@@ -506,26 +560,11 @@ bool getGuessInput(int rows, int columns,char userGuess[rows][columns])
 	char inputString[100]= {0};
 	char tmpString[100] = {0};
 
-#if 0
-	int i = 0;										//TODO delete
-
-	do
-	{
-		inputString[i] = getchar();
-		i++;
-	}
-	while(inputString[i-1] != '\n');
-
-
-	inputString[i-1] = 0;								// null terminate string
-#else
 	do
 	{
 		fgets(inputString, 100, stdin);
 	}
 	while (inputString[0] == '\n');								// ignore NULL input
-
-#endif
 
 // CITATION: https://stackoverflow.com/questions/13084236/function-to-remove-spaces-from-string-char-array-in-c
 	for (int i = 0, j = 0; i<strlen(inputString); i++,j++)                        // Evaluate each character in the input
@@ -579,7 +618,12 @@ int main( int argc, char *argv[] )
 
 	int numOfTop = 3;
 
+	printf( "displayTop:");
+
 	displayTop(numOfTop);
+
+
+	//displayBottom(numOfBottom);
 
 	do
 	{
@@ -627,6 +671,7 @@ int main( int argc, char *argv[] )
 
 	free(code);
 	free(userGuess);
+
 }
 
 
