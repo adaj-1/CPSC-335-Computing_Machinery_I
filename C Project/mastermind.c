@@ -24,6 +24,8 @@ char screenOutput[40][80];					// buffer to  hold in game screen outputs
 int screenCurrentRow=0;						// counts rows for buffer
 char gameOverOutput[100][100];				// buffer to  hold end game outputs
 int gameOverRow = 0;						// counts rows for buffer
+bool startGame;
+bool checkScore;
 
 /*
  * Description: struct to hold all user input parameters
@@ -515,7 +517,7 @@ bool checkUserQuit()
 
 	while (1)
 	{
-		printf("Play Again (0) or Exit ($)\n");					//TODO add in score checking
+		printf("Play Again (#) or Exit ($)\n");					//TODO add in score checking
 		fgets(checkPlayAgain, 50, stdin);						// takes user input
 
 		/* Citation: https://www.geeksforgeeks.org/strtok-strtok_r-functions-c-examples/ */
@@ -527,8 +529,9 @@ bool checkUserQuit()
 			{
 				return true;
 			}
-			else if (string1[0] == '0')							// getting row number
+			else  if (string1[0] == '#')								// getting row number
 			{
+				startGame = true;
 				return false;
 			}
 		}
@@ -675,29 +678,56 @@ void displayBottom(int numOfBottom)
 /*
  * Description: asks user for how many top or bottom scores
  */
-void checkDisplayTopBottom()
+bool checkDisplayTopBottom()
 {
-	int option;
+	int TopOrBot;
 	int n;
 
-	printf("Top Scores (0) or Bottom Scores (1) or Start Game (2)\n");		//TODO fix for end of game
-	scanf("%d", &option);
+	//bool gameQuit;
 
-	/* top scores */
-	if (option == 0)
+	//printf("Top Scores (0) or Bottom Scores (1)\n");		//TODO fix for end of game
+	//scanf("%d", &TopOrBot);
+
+
+	char checkPlayAgain[50];
+	char *string1;
+
+	while (1)
 	{
-		printf("Enter number of Top Scores to display:\n");
-		scanf("%d", &n);
-		displayTop(n);
+		printf("Top Scores (0) or Bottom Scores (1)\n");				//TODO add in score checking
+		fgets(checkPlayAgain, 50, stdin);						// takes user input
+
+		/* Citation: https://www.geeksforgeeks.org/strtok-strtok_r-functions-c-examples/ */
+		string1 = strtok(checkPlayAgain, " ");					// removes spaces from string
+
+		if (string1 != NULL)									// ensures string is not NULL
+		{
+			if (string1[0] == '$')								// checking for user quit
+			{
+				return true;
+			}
+			else
+			{
+				TopOrBot = atoi(string1);
+				/* top scores */
+				if (TopOrBot == 0)
+				{
+					printf("Enter number of Top Scores to display:\n");
+					scanf("%d", &n);
+					displayTop(n);
+				}
+
+				/* bottom scores */
+				else if (TopOrBot == 1)
+				{
+					printf("Enter number of Bottom Scores to display:\n");
+					scanf("%d", &n);
+					displayBottom(n);
+				}
+				return false;
+			}
+		}
 	}
-	/* bottom scores */
-	else if (option == 1)
-	{
-		printf("Enter number of Bottom Scores to display:\n");
-		scanf("%d", &n);
-		displayBottom(n);
-	}
-	return;
 }
 
 /*
@@ -746,15 +776,60 @@ bool getGuessOrCommands(struct UserSetup setup,
 		}
 	}
 
+	startGame = false;
+	checkScore = false;
+
 	/* check if user Quit */
 	if (userGuess[0][0] == '$')
 	{
 		return true;
 	}
+
+	if (userGuess[0][0] == '#')			//Start
+	{
+		startGame = true;
+		return false;
+	}
+
+	if (userGuess[0][0] == '!')			//SCORES
+	{
+		checkScore = true;
+		return  false;
+	}
 	else
 	{
 		return false;
 	}
+}
+
+bool checkStartOrScore(struct UserSetup setup, char userGuess[setup.rows][setup.columns])
+{
+	bool gameQuit = false;
+	do
+	{
+		printf("Start Game (#) or Quit Game ($) or Check Top/Bottom Scores (!)\n");
+		gameQuit = getGuessOrCommands(setup, userGuess);
+
+		if (gameQuit)
+		{
+			return true;
+		}
+
+		if (checkScore)
+		{
+			gameQuit =checkDisplayTopBottom();								// check if user would like to see top/ bottom scores
+
+			if (gameQuit)
+			{
+				return true;
+			}
+			checkScore = false;
+			startGame = true;
+		}
+	}
+	while(!startGame);
+
+	return false;
 }
 
 /*
@@ -873,10 +948,12 @@ int main(int argc, char *argv[])
 	char (*code)[mySetup.columns] = malloc(mySetup.rows *mySetup. columns * sizeof(code[0][0]));		// allocate memory for code
 	char (*userGuess)[mySetup.columns] = malloc(mySetup.rows * mySetup.columns * sizeof(code[0][0]));	// allocate memory for userGuess
 
-	checkDisplayTopBottom();			// check if user would like to see top/ bottom scores
-
 	/* game begins */
 	bool gameQuit = false;
+
+
+	gameQuit = checkStartOrScore(mySetup, userGuess);
+
 	while (!gameQuit)												// run until game is Quit
 	{
 		initializeGame (mySetup, code, &myGameTime, &myScores);
@@ -922,16 +999,18 @@ int main(int argc, char *argv[])
 					/* prints final score */
 					sprintf(gameOverOutput[gameOverRow++],"Final Score: %.2f\n", myScores.finalScore);
 					printf("Final Score: %.2f\n", myScores.finalScore);
-					gameQuit = checkUserQuit();
+
+					gameQuit = checkStartOrScore(mySetup, userGuess);
 				}
 			}
 		} // not gameOver
-
 		exitGame(mySetup, code, myScores, myGameTime);		// exit game
+/*
 		if (!gameQuit)
 		{
-			checkDisplayTopBottom();						// check if user wants top/bottom scores
+			checkStartOrScore(mySetup, userGuess);
 		}
+		*/
 	} // not gameQuit
 
 	free(code);
