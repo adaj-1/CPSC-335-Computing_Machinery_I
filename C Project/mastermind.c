@@ -118,7 +118,7 @@ void findTime(int maxTimeSec, struct GameTime *gameTime)
  */
 void timeToString(double timeInSec, char *timeStr)
 {
-	if (timeInSec == MY_POS_INFINITY)		// TODO fix infinity
+	if (timeInSec == MY_POS_INFINITY)
 	{
 		strcpy(timeStr, "INFINITY");
 	}
@@ -419,8 +419,6 @@ void logScore(struct UserSetup setup,
 			  struct AllScores score,
 			  struct GameTime gameTime)
 {
-	/* add in time */
-	/* TODO users who do not finish the game are not included in the returned list */
 	FILE *fp;
 	fp = fopen("mastermind.log", "a+");		// creates/ adds to log file
 
@@ -502,40 +500,6 @@ void exitGame(struct UserSetup setup,
 
 	logScore(setup, score, gameTime);				// adds player score to logfile
 	transcripeGame(setup, code, gameTime);			// transcribes the game
-}
-
-/*
- * Description: checks for user quit after game over
- *
- * @return 	true	if user enters $
- * 			false	if user wants to play again
- */
-bool checkUserQuit()
-{
-	char checkPlayAgain[50];
-	char *string1;
-
-	while (1)
-	{
-		printf("Play Again (#) or Exit ($)\n");					//TODO add in score checking
-		fgets(checkPlayAgain, 50, stdin);						// takes user input
-
-		/* Citation: https://www.geeksforgeeks.org/strtok-strtok_r-functions-c-examples/ */
-		string1 = strtok(checkPlayAgain, " ");					// removes spaces from string
-
-		if (string1 != NULL)									// ensures string is not NULL
-		{
-			if (string1[0] == '$')								// checking for user quit
-			{
-				return true;
-			}
-			else  if (string1[0] == '#')								// getting row number
-			{
-				startGame = true;
-				return false;
-			}
-		}
-	}
 }
 
 /*
@@ -683,18 +647,12 @@ bool checkDisplayTopBottom()
 	int TopOrBot;
 	int n;
 
-	//bool gameQuit;
-
-	//printf("Top Scores (0) or Bottom Scores (1)\n");		//TODO fix for end of game
-	//scanf("%d", &TopOrBot);
-
-
 	char checkPlayAgain[50];
 	char *string1;
 
 	while (1)
 	{
-		printf("Top Scores (0) or Bottom Scores (1)\n");				//TODO add in score checking
+		printf("Top Scores (0) or Bottom Scores (1)\n");
 		fgets(checkPlayAgain, 50, stdin);						// takes user input
 
 		/* Citation: https://www.geeksforgeeks.org/strtok-strtok_r-functions-c-examples/ */
@@ -802,7 +760,13 @@ bool getGuessOrCommands(struct UserSetup setup,
 	}
 }
 
-bool checkStartOrScore(struct UserSetup setup, char userGuess[setup.rows][setup.columns])
+/*
+ * Description: checks for start game, quit game and top/bottom score commands
+ *
+ * @param	setup		to check input
+ * 			userGuess	to check input
+ */
+bool checkStartOrExitOrScore(struct UserSetup setup, char userGuess[setup.rows][setup.columns])
 {
 	bool gameQuit = false;
 	do
@@ -810,24 +774,23 @@ bool checkStartOrScore(struct UserSetup setup, char userGuess[setup.rows][setup.
 		printf("Start Game (#) or Quit Game ($) or Check Top/Bottom Scores (!)\n");
 		gameQuit = getGuessOrCommands(setup, userGuess);
 
-		if (gameQuit)
+		if (gameQuit)										// check if game was quit
 		{
 			return true;
 		}
 
 		if (checkScore)
 		{
-			gameQuit =checkDisplayTopBottom();								// check if user would like to see top/ bottom scores
+			gameQuit =checkDisplayTopBottom();				// check if user would like to see top/ bottom scores
 
-			if (gameQuit)
+			if (gameQuit)									// check if game was quit
 			{
 				return true;
 			}
 			checkScore = false;
-			startGame = true;
 		}
 	}
-	while(!startGame);
+	while(!startGame);										// loop until game starts
 
 	return false;
 }
@@ -952,7 +915,7 @@ int main(int argc, char *argv[])
 	bool gameQuit = false;
 
 
-	gameQuit = checkStartOrScore(mySetup, userGuess);
+	gameQuit = checkStartOrExitOrScore(mySetup, userGuess);
 
 	while (!gameQuit)												// run until game is Quit
 	{
@@ -968,7 +931,7 @@ int main(int argc, char *argv[])
 
 			if (gameQuit)
 			{
-				myScores.finalScore = MY_NEG_INFINITY;				//TODO fix this?
+				myScores.finalScore = MY_NEG_INFINITY;
 				myGameTime.timeRemaining = MY_POS_INFINITY;
 			}
 			else
@@ -1000,17 +963,11 @@ int main(int argc, char *argv[])
 					sprintf(gameOverOutput[gameOverRow++],"Final Score: %.2f\n", myScores.finalScore);
 					printf("Final Score: %.2f\n", myScores.finalScore);
 
-					gameQuit = checkStartOrScore(mySetup, userGuess);
+					gameQuit = checkStartOrExitOrScore(mySetup, userGuess);
 				}
 			}
 		} // not gameOver
 		exitGame(mySetup, code, myScores, myGameTime);		// exit game
-/*
-		if (!gameQuit)
-		{
-			checkStartOrScore(mySetup, userGuess);
-		}
-		*/
 	} // not gameQuit
 
 	free(code);
