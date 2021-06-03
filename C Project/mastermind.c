@@ -132,7 +132,7 @@ void timeToString(double timeInSec, char *timeStr)
 	}
 	else
 	{
-		strcpy(timeStr, "00:00");		// set time to 00:00 TODO do i need this?
+		strcpy(timeStr, "00:00");		// placeholder in case time is negative
 	}
 }
 
@@ -241,7 +241,10 @@ void initializeGame (struct UserSetup setup,
  * 			S is the cumulative score
  * 			T is the remaining time
  */
-void displayHints(struct UserSetup setup, struct GameTime gameTime, struct AllScores score, char userGuess[setup.rows][setup.columns])
+void displayHints(struct UserSetup setup,
+				  struct GameTime gameTime,
+				  struct AllScores score,
+				  char userGuess[setup.rows][setup.columns])
 {
 	char userInputSpaceStr[80];								// to hold cracked code dashes
 	char userInputStr[80];									// to hold userGuess
@@ -250,7 +253,7 @@ void displayHints(struct UserSetup setup, struct GameTime gameTime, struct AllSc
 	userInputStr[0] = '\0';									// initialize to null
 
 
-	/* to reprint user guess with hints */
+	/* to reprint user guess with hints */					//TODO if time fix for multi rows
 	for (int i=0; i < setup.rows*setup.columns; i++)
 	{
 		strcat( userInputSpaceStr, "- ");
@@ -299,6 +302,7 @@ void findBW(struct UserSetup setup,
 	score->B = 0;
 	score->W = 0;
 
+	/* copying code to tmpcode */
 	for (int i = 0; i < setup.rows; i++)
 	{
 		for (int j = 0; j < setup.columns; j++)
@@ -307,6 +311,7 @@ void findBW(struct UserSetup setup,
 		}
 	}
 
+	/* copying userGuess to tmpUserGuess*/
 	for (int i = 0; i < setup.rows; i++)
 	{
 		for (int j = 0; j < setup.columns; j++)
@@ -315,6 +320,7 @@ void findBW(struct UserSetup setup,
 		}
 	}
 
+	/* calculating B score */
 	for (int i = 0; i < setup.rows; i++)
 		{
 			for (int j = 0; j < setup.columns; j++)
@@ -328,11 +334,12 @@ void findBW(struct UserSetup setup,
 			}
 		}
 
+	/* calculating W score */
 	for (int i = 0; i < setup.rows; i++)
 	{
 		for (int j = 0; j < setup.columns; j++)
 		{
-			char colour = tmpUserGuess[i][j];
+			char colour = tmpUserGuess[i][j];						// checks for one colour at a time
 
 			for (int x = 0; x < setup.rows; x++)
 			{
@@ -341,8 +348,8 @@ void findBW(struct UserSetup setup,
 					if (colour == tmpCode[x][y])
 					{
 						score->W++;
-						tmpUserGuess[i][j] = '0';
-						tmpCode[x][y] = '1';
+						tmpUserGuess[i][j] = '0';					// set to 0 to avoid future match
+						tmpCode[x][y] = '1';						// set to 1 to avoid future match
 					}
 				}
 			}
@@ -352,6 +359,16 @@ void findBW(struct UserSetup setup,
 
 /*
  * Description: returns overall score
+ *
+ * @param	setup		used to calculate scores
+ * 			code		used to check user guess
+ * 			userGuess	checks user guess
+ * 			*gameTime	updates remaining time
+ * 			*score		to update scores
+ *
+ * @return	false if	(1) code is cracked
+ * 						(2) time exceeded
+ * 						(3) trials exceeded
  */
 bool calculateScore(struct UserSetup setup,
 					char code[setup.rows][setup.columns],
@@ -359,85 +376,91 @@ bool calculateScore(struct UserSetup setup,
 					struct GameTime *gameTime,
 					struct AllScores *score)
 {
-	findBW(setup, code, userGuess, score);
+	findBW(setup, code, userGuess, score);										// calculates B and W
 
 	// S- calculate cumulative score
 	double stepScore = (score->B + (score->W/ 2)) / score->numOfTrials;			// calculate stepscore
 
-	score->cumScore += stepScore;
+	score->cumScore += stepScore;												// calculates cumulative score
 
 	findTime(setup.maxTime * 60, gameTime);										// *60 to convert from min to sec
 
-	score->finalScore = (score->cumScore/ score->numOfTrials) * gameTime->timeRemaining * 1000;
-
-
-	if (score->B == setup.rows*setup.columns)
+	if (gameTime->timeRemaining < 0)											// checks if time exceeded
 	{
-		//sprintf(gameOverOutput[gameOverRow++],"Cracked!\n");
-		//printf("Cracked!\n");
+		gameTime->timeRemaining = 0;
+	}
+
+	score->finalScore = (score->cumScore/ score->numOfTrials) * gameTime->timeRemaining * 1000;		// calculates final score
+
+	if (score->B == setup.rows*setup.columns || gameTime->timeRemaining <= 0 )	// checks for game over conditions
+	{
 		return true;
 	}
 
-	if (score->numOfTrials > setup.maxTrials- 1)
+	if (score->numOfTrials > setup.maxTrials- 1)								// checks for game over conditions
 	{
 		score->finalScore = score->finalScore * -1;
-		//sprintf(gameOverOutput[gameOverRow++],"Trials exceeded.\n");
-		//printf("Trials exceeded.\n");
 		return true;
 	}
 
-	if(gameTime->timeRemaining < 0)
-	{
-		//sprintf(gameOverOutput[gameOverRow++],"Trials exceeded.\n");
-		//printf("Time exceeded.\n");
-		return true;
-	}
 	return false;
 }
 
 /*
  * Description: Records player names and score in log file
  *
- * @param	*playerName holds the userInput player name
- * 			score holds the current score
- * 			time holds how long the game was
+ * @param	setup		hold player information
+ * 			score 		holds all scores
+ * 			gameTime	holds game time information
  */
-void logScore(struct UserSetup setup, struct AllScores score, struct GameTime gameTime)
+void logScore(struct UserSetup setup,
+			  struct AllScores score,
+			  struct GameTime gameTime)
 {
 	/* add in time */
 	/* TODO users who do not finish the game are not included in the returned list */
-
 	FILE *fp;
-	fp = fopen("mastermind.log", "a+");											// creates/ adds to log file
-	fprintf(fp,"%s %f %d:%d\n", setup.playerName,
-								score.finalScore,
-								gameTime.minutes,
-								gameTime.seconds);			// records player name and score in log file
+	fp = fopen("mastermind.log", "a+");		// creates/ adds to log file
+
+	char timeStr[80];
+	timeToString(gameTime.timeRemaining, timeStr);
+
+	if (score.finalScore == MY_NEG_INFINITY)								// checks for player quit
+	{
+		fprintf(fp,"%s -INFINITY INFINITY\n", setup.playerName);			// records player name and score in log file
+	}
+	else
+	{
+		fprintf(fp,"%s %f %s\n", setup.playerName,
+										score.finalScore,
+										timeStr);							// records player name and score in log file
+	}
 }
 
 /*
- * Description:addition, a transcript file is created that
- *  records the game played (the steps in each move as shown on the screen
+ * Description: records the game played in a txt file
+ *
+ * @param	setup		player information
+ * 			code		not used
+ * 			gameTime	used to build file name
  */
 void transcripeGame(struct UserSetup setup,
-					char code[setup.rows][setup.columns],struct GameTime gameTime)
+					char code[setup.rows][setup.columns],
+					struct GameTime gameTime)
 {
-	//TODO didnt use *code as specified in assignment
-
 	char timeStr[40];
 
-	//CITATION: https://en.wikibooks.org/wiki/C_Programming/time.h/time_t
+	/* CITATION: https://en.wikibooks.org/wiki/C_Programming/time.h/time_t */
 	time_t     now;
-	    struct tm *ts;
-	    char  testBuf[80];
+	struct tm *ts;
+	char  testBuf[80];
 
-	  /* Get the current time */
-	  now = time(NULL);
+	 /* Get the current time */
+	now = time(NULL);
 
+	/* Format and print the time, "hh:mm:ss " */
 	ts = localtime(&now);
-
 	strftime(testBuf, sizeof(testBuf), "%H-%M-%S", ts);
-	puts(testBuf);
 
 	sprintf(timeStr, "%s_%s", setup.playerName, testBuf);
 
@@ -446,7 +469,7 @@ void transcripeGame(struct UserSetup setup,
 
 	FILE *fp;
 	fp = fopen(buf, "a+");
-	for (int i = 0; i < startUpRow; i++)		// print all hints for this game
+	for (int i = 0; i < startUpRow; i++)			// print start game messages
 	{
 		fprintf(fp, "%s", startUpOutput[i] );
 	}
@@ -456,23 +479,35 @@ void transcripeGame(struct UserSetup setup,
 		fprintf(fp, "%s", screenOutput[i] );
 	}
 
-	for (int i = 0; i < gameOverRow; i++)		// print all hints for this game
-		{
-			fprintf(fp, "%s", gameOverOutput[i] );
-		}
-
-
+	for (int i = 0; i < gameOverRow; i++)			// print game over messages
+	{
+		fprintf(fp, "%s", gameOverOutput[i] );
+	}
 }
 
+/*
+ * Description: exits the game
+ *
+ * @param	setup		passes user input parameters
+ * 			score		passes final score information
+ * 			gameTime	passes final time
+ */
 void exitGame(struct UserSetup setup,
-		char code[setup.rows][setup.columns],
-		struct AllScores score,
-		struct GameTime gameTime)
+			  char code[setup.rows][setup.columns],
+			  struct AllScores score,
+			  struct GameTime gameTime)
 {
-	logScore(setup, score, gameTime);
-	transcripeGame(setup, code, gameTime);
+
+	logScore(setup, score, gameTime);				// adds player score to logfile
+	transcripeGame(setup, code, gameTime);			// transcribes the game
 }
 
+/*
+ * Description: checks for user quit after game over
+ *
+ * @return 	true	if user enters $
+ * 			false	if user wants to play again
+ */
 bool checkUserQuit()
 {
 	char checkPlayAgain[50];
@@ -480,19 +515,19 @@ bool checkUserQuit()
 
 	while (1)
 	{
-		printf("Play Again (0) or Exit ($)\n");
-		fgets(checkPlayAgain, 50, stdin);																	// takes user input
+		printf("Play Again (0) or Exit ($)\n");					//TODO add in score checking
+		fgets(checkPlayAgain, 50, stdin);						// takes user input
 
 		/* Citation: https://www.geeksforgeeks.org/strtok-strtok_r-functions-c-examples/ */
-		string1 = strtok(checkPlayAgain, " ");																// removes spaces from string
+		string1 = strtok(checkPlayAgain, " ");					// removes spaces from string
 
-		if (string1 != NULL)																			// ensures string is not NULL
+		if (string1 != NULL)									// ensures string is not NULL
 		{
-			if (string1[0] == '$')													// checking for user quit
+			if (string1[0] == '$')								// checking for user quit
 			{
 				return true;
 			}
-			else if (string1[0] == '0')															// getting row number
+			else if (string1[0] == '0')							// getting row number
 			{
 				return false;
 			}
@@ -501,141 +536,161 @@ bool checkUserQuit()
 }
 
 /*
- * Description: user can also ask to display the top or bottom n scores
- *  before or after any game, including player names and duration.
+ * Description: user can also ask to display the top n scores before or after any game, including player names and duration.
+ *
+ * @param	numOfTop	number of top scores
  */
 void displayTop(int numOfTop)
 {
-		FILE *fptr;
+	FILE *fptr;
 
-		char tmpName[20];
-		float tmpScore;
-		char tmpDuration[10];
+	/* tmp arrays to check for top score */
+	char tmpName[20];
+	char tmpScore[80];
+	char tmpDuration[10];
 
-		char name[numOfTop][20];     // highest score in slot 0
-		double score[numOfTop];
-		char duration[numOfTop][10];
+	/* arrays for printing top scores*/
+	char name[numOfTop][20];    					// highest score in slot 0
+	double score[numOfTop];
+	char duration[numOfTop][10];
 
-		for (int i = 0; i < numOfTop; i++)
+	/* initializes top scores arrays*/
+	for (int i = 0; i < numOfTop; i++)
+	{
+		name[i][0] = 0;         					// null string
+	    score[i] = -INFINITY;
+	    duration[i][0] = 0;
+	}
+
+	fptr = fopen("mastermind.log","r");				// read log file
+
+	if (fptr == NULL)
+	{
+		printf("Error! File is Empty.\n");
+		return;
+	}
+
+	/* scans file for top scores */
+	while (fscanf( fptr, "%s %s %s", tmpName, tmpScore, tmpDuration ) == 3 )
+	{
+		/* does not check -INFINITY scores */
+		if (strcmp(tmpScore,"-INFINITY") != 0)
 		{
-			name[i][0] = 0;         // null string
-		    score[i] = -INFINITY; // TODO set to -infinite
-		    duration[i][0] = 0;
-		}
-
-		fptr = fopen("mastermind.log","r");
-
-	    if (fptr == NULL)
-		{
-			printf("Error!\n");
-			return;
-		}
-
-		while (fscanf( fptr, "%s %f %s", tmpName, &tmpScore, tmpDuration ) == 3 )
-		{
+			float logScore = atof(tmpScore);							// converts string to float
 			for (int i = 0; i < numOfTop; i++)
 			{
-				if (tmpScore > score[i])                  // add tmpScore to right position
-		        {
+				if (logScore > score[i])                 				// add tmpScore to right position
+				{
 					for (int j = numOfTop - 1; j > (i - 1); j--)
 					{
-						score[j] = score[j-1];       // shift the top scores down by 1
+						score[j] = score[j-1];      					// shift the top scores down by 1
 						strcpy(name[j], name[j-1]);
 						strcpy(duration[j], duration[j-1]);
 					}
 
-					score[i] = tmpScore;    // add the tmpScore to the right position
+					score[i] = logScore;    							// add the tmpScore to the right position
 					strcpy(name[i], tmpName);
 					strcpy(duration[i], tmpDuration);
-					break;					// break out of for loop
-		        }
+					break;												// break out of for loop
+				}
 			}
 		}
+	}
 
-	    for (int i = 0; i < numOfTop; i++)
-	    {
-	    	 printf("%s %f %s\n", name[i], score[i], duration[i]);
-	    }
-
+	/* print top scores*/
+	for (int i = 0; i < numOfTop; i++)
+	{
+		printf("%s %f %s\n", name[i], score[i], duration[i]);
+	}
 }
 
+/*
+ * Description: user can also ask to display the bottom n scores before or after any game, including player names and duration.
+ *
+ * @param	numOfBottom	number of bottom scores
+ */
 void displayBottom(int numOfBottom)
 {
-		FILE *fptr;
+	FILE *fptr;
 
-		char tmpName[20];
-		float tmpScore;
-		char tmpDuration[10];
+	/* tmp arrays to check for bottom score */
+	char tmpName[20];
+	char tmpScore[80];
+	char tmpDuration[10];
 
-		char name[numOfBottom][20];     // highest score in slot 0
-		double score[numOfBottom];
-		char duration[numOfBottom][10];
+	/* arrays for printing bottom scores*/
+	char name[numOfBottom][20];    									 // highest score in slot 0
+	double score[numOfBottom];
+	char duration[numOfBottom][10];
 
-		for (int i = 0; i < numOfBottom; i++)
+	/* initializes bottom scores arrays*/
+	for (int i = 0; i < numOfBottom; i++)
+	{
+		name[i][0] = 0;        										 // null string
+	    score[i] = INFINITY;
+	    duration[i][0] = 0;
+	}
+
+	fptr = fopen("mastermind.log","r");								// read log file
+
+	if (fptr == NULL)
+	{
+		printf("Error! File is Empty.\n");
+		return;
+	}
+
+	/* scans file for bottom scores */
+	while (fscanf( fptr, "%s %s %s", tmpName, tmpScore, tmpDuration ) == 3 )
+	{
+		/* does not check -INFINITY scores */
+		if (strcmp(tmpScore,"-INFINITY") != 0)
 		{
-			name[i][0] = 0;         // null string
-		    score[i] = MY_POS_INFINITY; // TODO set to infinite
-		    duration[i][0] = 0;
-		}
-
-		fptr = fopen("mastermind.log","r");
-
-		if (fptr == NULL)
-		{
-			printf("Error!\n");
-			return;
-		}
-
-		while (fscanf( fptr, "%s %f %s", tmpName, &tmpScore, tmpDuration ) == 3 )
-		{
+			float logScore = atof(tmpScore);							// converts string to float
 			for (int i = 0; i < numOfBottom; i++)
 			{
-				if (tmpScore == MY_NEG_INFINITY)
+				if (logScore < score[i])                				// add tmpScore to right position
 				{
-					printf("----> MY_NEG_INFINITY\n");
-				}
-				else
-				{
-					printf("----> not MY_NEG_INFINITY\n");
-				}
-
-				if (tmpScore < score[i] && tmpScore != MY_NEG_INFINITY)                  // add tmpScore to right position
-		        {
 					for (int j = numOfBottom - 1; j > (i - 1); j--)
 					{
-						score[j] = score[j-1];       // shift the top scores down by 1
+						score[j] = score[j-1];      					// shift the top scores down by 1
 						strcpy(name[j], name[j-1]);
 						strcpy(duration[j], duration[j-1]);
 					}
-						score[i] = tmpScore;    // add the tmpScore to the right position
+					score[i] = logScore;    							// add the tmpScore to the right position
 					strcpy(name[i], tmpName);
 					strcpy(duration[i], tmpDuration);
-					break;					// break out of for loop
-		        }
+					break;												// break out of for loop
+				}
 			}
 		}
+	}
 
-		for (int i = 0; i < numOfBottom; i++)
-		{
-		   	 printf("%s %f %s\n", name[i], score[i], duration[i]);
-		}
-			//TODO infinity
+	/* print bottom scores*/
+	for (int i = 0; i < numOfBottom; i++)
+	{
+	   	 printf("%s %f %s\n", name[i], score[i], duration[i]);
+	}
 }
 
+/*
+ * Description: asks user for how many top or bottom scores
+ */
 void checkDisplayTopBottom()
 {
 	int option;
 	int n;
 
-	printf("Top Scores (0) or Bottom Scores (1) or Start Game (2)\n");
+	printf("Top Scores (0) or Bottom Scores (1) or Start Game (2)\n");		//TODO fix for end of game
 	scanf("%d", &option);
 
+	/* top scores */
 	if (option == 0)
 	{
 		printf("Enter number of Top Scores to display:\n");
 		scanf("%d", &n);
 		displayTop(n);
 	}
+	/* bottom scores */
 	else if (option == 1)
 	{
 		printf("Enter number of Bottom Scores to display:\n");
@@ -645,9 +700,17 @@ void checkDisplayTopBottom()
 	return;
 }
 
+/*
+ * Description: checks user input for guess or quit
+ *
+ * @param	setup		user input parameters
+ * 			userGuess	user inputed guess
+ *
+ * @return	true	quit command
+ * 			false	user guess
+ */
 bool getGuessOrCommands(struct UserSetup setup,
-								 char userGuess[setup.rows][setup.columns],
-								 int *n)
+						char userGuess[setup.rows][setup.columns])
 {
 	char inputString[100]= {0};
 	char tmpString[100] = {0};
@@ -658,21 +721,23 @@ bool getGuessOrCommands(struct UserSetup setup,
 	}
 	while (inputString[0] == '\n');								// ignore NULL input
 
-// CITATION: https://stackoverflow.com/questions/13084236/function-to-remove-spaces-from-string-char-array-in-c
+	/* CITATION: https://stackoverflow.com/questions/13084236/function-to-remove-spaces-from-string-char-array-in-c */
 	for (int i = 0, j = 0; i<strlen(inputString); i++,j++)		// Evaluate each character in the input
 	{
 		if (inputString[i] != ' ')
 		{
-			tmpString[j] = inputString[i];     	// If the character is not a space
-		}	                                   	// Copy that character to the output char[]
+			tmpString[j] = inputString[i];     					// If the character is not a space
+		}	                                   					// Copy that character to the output char[]
 		else
 		{
-			 j--;
-		}		                               	// If it is a space then do not increment the output index (j), the next non-space will be entered at the current index
-	 }
+			 j--; 												// If it is a space then do not increment the output index (j)
+
+		}
+	}
 //TODO input validation that inputstring contains enough guesses
 //TODO ensure there are enough characters entered and within the color range
 
+	/* fill userGuess array */
 	for (int i = 0; i < setup.rows; i++)
 	{
 		for (int j = 0; j < setup.columns; j++)
@@ -681,8 +746,7 @@ bool getGuessOrCommands(struct UserSetup setup,
 		}
 	}
 
-	printf("----> %c %c %c %c %c\n", userGuess[0][0],userGuess[0][1],userGuess[0][2],userGuess[0][3],userGuess[0][4]);
-
+	/* check if user Quit */
 	if (userGuess[0][0] == '$')
 	{
 		return true;
@@ -693,6 +757,11 @@ bool getGuessOrCommands(struct UserSetup setup,
 	}
 }
 
+/*
+ * Description: user input validation
+ *
+ * @return true	if all input is valid
+ */
 bool checkUserSettings(struct UserSetup setup)
 {
 	bool inputStatus = true;
@@ -745,22 +814,22 @@ int main(int argc, char *argv[])
 
 	bool userInputValid = false;
 
-	if (argc == 7)														// validate number of arguments
+	if (argc == 7)													// validate number of arguments
 	{
-		strcpy(mySetup.playerName, argv[1]);											// copying program argument to playerName
-		mySetup.rows = atoi(argv[2]);														// converting string argument to integer
+		strcpy(mySetup.playerName, argv[1]);						// copying program argument to playerName
+		mySetup.rows = atoi(argv[2]);								// converting string argument to integer
 		mySetup.columns = atoi(argv[3]);
 		mySetup.numOfColours = atoi(argv[4]);
 		mySetup.maxTrials = atoi(argv[5]);
 		mySetup.maxTime = atoi(argv[6]);
 
-		userInputValid = checkUserSettings(mySetup);
+		userInputValid = checkUserSettings(mySetup);				// check for valid input
 	}
 	else
 	{
 		printf( "Input Error: " );
 	}
-
+	/* ask for new input if previous was invalid */
 	while (!userInputValid)
 	{
 		printf( "Please enter Player Name, N, M, C, R, and T values\n" );
@@ -773,7 +842,7 @@ int main(int argc, char *argv[])
 
 //TODO validate user input parameters
 
-		userInputValid = checkUserSettings(mySetup);
+		userInputValid = checkUserSettings(mySetup);				// check for valid input
 
 		if (!userInputValid)
 		{
@@ -781,12 +850,12 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	/* request game mode from user*/
 	bool modeSelect = false;
 	do
 	{
 		printf("Please select a mode: Play (0) or Test (1)\n");
 		scanf("%d", &mySetup.mode);
-
 
 //TODO mode input validation check for non integers
 
@@ -801,65 +870,56 @@ int main(int argc, char *argv[])
 	}
 	while(!modeSelect);
 
-	char (*code)[mySetup.columns] = malloc(mySetup.rows *mySetup. columns * sizeof(code[0][0]));	// allocate memory for code
-	char (*userGuess)[mySetup.columns] = malloc(mySetup.rows * mySetup.columns * sizeof(code[0][0]));	// allocate memory for code
+	char (*code)[mySetup.columns] = malloc(mySetup.rows *mySetup. columns * sizeof(code[0][0]));		// allocate memory for code
+	char (*userGuess)[mySetup.columns] = malloc(mySetup.rows * mySetup.columns * sizeof(code[0][0]));	// allocate memory for userGuess
 
-	int n = 0;									// initialize
-	//TODO uncomment and add top bottom score
+	checkDisplayTopBottom();			// check if user would like to see top/ bottom scores
 
-	//printf( "TOP BOTTOM SCORE:\n");				//TODO ask user for top/bottom score ONLY
-	//getGuessOrCommands(mySetup,userGuess, &n);
-
-	checkDisplayTopBottom();
-
+	/* game begins */
 	bool gameQuit = false;
-	while (!gameQuit)
+	while (!gameQuit)												// run until game is Quit
 	{
 		initializeGame (mySetup, code, &myGameTime, &myScores);
-		bool gameOver = false;
 
-		while (!gameOver && !gameQuit)
+		bool gameOver = false;
+		while (!gameOver && !gameQuit)								// run until game is over
 		{
-			myScores.numOfTrials++;
+			myScores.numOfTrials++;									// keep track of trials
 
 			printf( "Enter your guess below:\n");
-			gameQuit = getGuessOrCommands(mySetup,userGuess, &n);
+			gameQuit = getGuessOrCommands(mySetup,userGuess);		// get user input
 
 			if (gameQuit)
 			{
-				myScores.finalScore = MY_NEG_INFINITY;
-				myGameTime.minutes = 99;
-				myGameTime.seconds = 99;			//TODO fix to positive infinity
-
+				myScores.finalScore = MY_NEG_INFINITY;				//TODO fix this?
+				myGameTime.timeRemaining = MY_POS_INFINITY;
 			}
 			else
 			{
-				gameOver = calculateScore(mySetup, code, userGuess, &myGameTime, &myScores);
-				displayHints(mySetup, myGameTime, myScores, userGuess);
+				gameOver = calculateScore(mySetup, code, userGuess, &myGameTime, &myScores);		// calculate score and check if game over
+				displayHints(mySetup, myGameTime, myScores, userGuess);								// display hints
 				if (gameOver)
 				{
-					if (myScores.B == mySetup.rows*mySetup.columns)
-						{
-							sprintf(gameOverOutput[gameOverRow++],"Cracked!\n");
-							printf("Cracked!\n");
+					if (myScores.B == mySetup.rows*mySetup.columns)									// code cracked
+					{
+						sprintf(gameOverOutput[gameOverRow++],"Cracked!\n");
+						printf("Cracked!\n");
+					}
 
-						}
+					if (myScores.numOfTrials > mySetup.maxTrials- 1)							// exceeded max trials
+					{
+						sprintf(gameOverOutput[gameOverRow++],"Trials exceeded.\n");
+						printf("Trials exceeded.\n");
 
-						if (myScores.numOfTrials > mySetup.maxTrials- 1)
-						{
+					}
 
-							sprintf(gameOverOutput[gameOverRow++],"Trials exceeded.\n");
-							printf("Trials exceeded.\n");
+					if(myGameTime.timeRemaining < 0)											// exceeded time
+					{
+						sprintf(gameOverOutput[gameOverRow++],"Trials exceeded.\n");
+						printf("Time exceeded.\n");
+					}
 
-						}
-
-						if(myGameTime.timeRemaining < 0)
-						{
-							sprintf(gameOverOutput[gameOverRow++],"Trials exceeded.\n");
-							printf("Time exceeded.\n");
-
-						}
-
+					/* prints final score */
 					sprintf(gameOverOutput[gameOverRow++],"Final Score: %.2f\n", myScores.finalScore);
 					printf("Final Score: %.2f\n", myScores.finalScore);
 					gameQuit = checkUserQuit();
@@ -867,12 +927,11 @@ int main(int argc, char *argv[])
 			}
 		} // not gameOver
 
-		exitGame(mySetup, code, myScores, myGameTime);
+		exitGame(mySetup, code, myScores, myGameTime);		// exit game
 		if (!gameQuit)
 		{
-			checkDisplayTopBottom();
+			checkDisplayTopBottom();						// check if user wants top/bottom scores
 		}
-
 	} // not gameQuit
 
 	free(code);
