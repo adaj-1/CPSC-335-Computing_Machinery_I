@@ -12,17 +12,18 @@ printNum:	.string "%d"
 middle:		.string ", "
 ending:		.string "}\n"
 indexing:	.string "(%d,%d)"
+printProduct:	.string "The product matrix is: {"
 
 define(userInput,x19)
 define(arr_base, x20)
 define(offset, x21)
 define(alloc, x22)
-define(numOfElements, x23)
 define(counter, x24)
-define(xOrY, x25)
-define(matrix, x26)
-define(randNum, x27)
-define(arr_size, x28)
+define(i, x25)
+define(productarr_base, x26)
+define(j, x27)
+//define(arr_size, x28)
+
 
 .balign 4
 .global main
@@ -40,18 +41,18 @@ main:   stp x29, x30, [sp, -16]!
         ldr x14, =n                              // load address =n to register x14
         ldr userInput, [x14]                     // load the value of n
 
-        mul arr_size, userInput, userInput 	// determine size of arr
+        mul x28, userInput, userInput 	// determine size of arr
 	mov x9, 8				// integer is 4 bytes
-        mul alloc, arr_size, x9 		// total array size
+        mul alloc, x28, x9 		// total array size
         neg alloc, alloc
 	and alloc, alloc, -16                   // allocates (N*N*4) & -16 bytes
         add sp, sp, alloc
 
-        mov arr_base, sp
+	mov arr_base, sp
         mov offset, 0
         mov counter, 0
 	mov x11, 2	
-	mul numOfElements, arr_size, x11	
+	mul x23, x28, x11			// calculating number of elements in array
 
         mov x0, 0
         bl time
@@ -64,7 +65,7 @@ strLoop:
 	bl rand
 
 	mov x10, x0	
-	mov x11, 25			 // putting 25 into x9 temp register
+	mov x11, 25			 // putting 25 into x11 temp register
 	lsr x10, x10, x11 	         // logic shift right to make randomly generated number small
 	add x10, x10, 1                  // ensuring jackpot number is never 0 or the loop will exit
 	
@@ -74,7 +75,7 @@ strLoop:
 	add counter, counter, 1
 
 strLoopTest:
-	cmp counter, numOfElements 
+	cmp counter, x23		// compare to number of elements in array 
 	b.lt strLoop
 	
 	mov counter, 1
@@ -96,20 +97,8 @@ ldrLoop:
 
 	add counter, counter, 1
 	
-//	add j, j , 1	
-//	cmp j, userInput
-//	b.lt ldrLoopTest
-//	mov j , 0
-//	add i, i , 1
-
-//findOffset:
-//	mul x12, userInput, i
-//	add x12, x12, j
-//	mul x12, x12, x9
-	
-
 ldrLoopTest:
-	cmp counter, arr_size
+	cmp counter, x28
 	b.lt ldrLoop
 
 	ldr x10, [arr_base, offset]
@@ -127,7 +116,7 @@ ldrLoopTest:
 	
 	mov counter, 1
 	mov offset, 0
-	mov xOrY, 0
+	mov x23, 0			//TODO using i as tempVar for now
 
 printXMatrix:
 	ldr x0, =printX
@@ -135,7 +124,7 @@ printXMatrix:
 	b displayXY
 	
 printYMatrix:
-	add xOrY, xOrY, 1
+	add x23, x23, 1			//TODO using i as tempVar for now
 	ldr x0, =printY
 	bl printf
 	
@@ -153,7 +142,7 @@ displayXY:
 	add counter, counter, 1
 
 displayXYTest:
-	cmp counter, arr_size
+	cmp counter, x28
 	b.lt displayXY
 	
 	ldr x10, [arr_base, offset]
@@ -169,22 +158,116 @@ displayXYTest:
 	mov counter, 1
 	mov offset, 4
 	
-	
-	cmp xOrY, 1
+	cmp x23, 1			//TODO using i as tmpVar for now
 	b.lt printYMatrix
 
 	mov counter,1
 	mov offset, 0
 
 XYMultiply:
+	add sp, sp, alloc			// allocating space for product matrix
+
+	mov productarr_base, sp			
+        mov offset, 0
+	mov counter, 0
+	mov i, 0		// product matrix row
+	mov j, 0		// product matrix column
+	mov x10, 0		// X Matrix row
+	mov x11, 0		// X Matrix column
+	mov x13, 0		// 
+	mov x14, 0		// Y Matrix row
+	mov x15, 0		// Y Matrix column
+	mov x23, 0		//TODO k
+	mov x28, 0	
+
+findXMatrixOffset:				// LOOP
+	mov x9, 8 				// bytes between 2D array elements
 	
+	mov offset, userInput			// m
+	mul offset, offset, i			// m * i
+	add offset, offset, x23			// (m * i) + j
+	mul offset, offset, x9			// ((m * i) + j) * E_size
+	ldr x10, [arr_base, offset]
 
+findYMatrixOffset:				// LOOP
+	mov x9, 8 				// bytes between 2D array elements
+	mov x12, 4				// offset for y matrix elements	
 
+	mov offset, userInput			// m
+	mul offset, offset, x23			// (m * i)
+	add offset, offset, j			// ((m * i) + j) * E_size
+	mul offset, offset, x9			// ((m * i) + j) * E_size
+	add offset, offset, x12			// +4 bytes to get to y matrix values
+	ldr x11, [arr_base,offset]		// getting Y element
 
+calculateProduct:					
+	mul x10, x10, x11			// multiplying X and Y element
+	add x28, x28, x10			// summing
 
+	add x23, x23, 1				// increment column for X matrix and row for Y matrix
+	cmp x23, userInput
+	b.lt findXMatrixOffset
 	
-end:	sub sp, sp, alloc
-        ldp x29, x30, [sp], 16                     //TODO fix
+	mov offset, 0
+	mov x9, 8				// bytes between 2D array elements
+	mul offset, x23, x9			// finding offset for elements in product matrix
+
+	str x28, [productarr_base, offset]	// storing product TODO FIX OFFSET
+
+YMatrixTest:					// LOOP TEST
+	mov x28, 0
+	mov x23, 0				// resetting column for X matrix and row for Y matrix
+	add j, j, 1				// incrementing	column for Y matrix
+	cmp j, userInput			// check if finished calculating product element
+	b.lt findXMatrixOffset
+
+XMartixTest:
+	mov x28, 0
+	mov x23, 0
+	mov j, 0
+	add i, i , 1				// incrementing row for X matrix
+	cmp i, userInput
+	b.lt findXMatrixOffset
+
+	mov counter, 1
+	mov offset, 0
+printProductMatrix:
+	add x23, x23, 1			//TODO using i as tempVar for now
+	ldr x0, =printProduct
+	bl printf
+	
+	ldr x10, [productarr_base, offset]
+	add offset, offset, 8 
+	
+	ldr x0, =printNum
+	mov x1, x10
+	bl printf
+	
+	ldr x0, =middle
+	bl printf
+	
+	add counter, counter, 1
+
+	cmp counter, x28
+	b.lt printProductMatrix
+	
+	ldr x10, [arr_base, offset]
+	add offset, offset, 8 
+	
+	ldr x0, =printNum		//printing martix num
+	mov x1, x10
+	bl printf
+	
+	ldr x0, =ending			// printing closing bracket
+	bl printf
+
+	mov counter,1
+	mov offset, 0
+
+
+end:	sub sp, sp, alloc			
+	sub sp, sp, alloc
+        ldp x29, x30, [sp], 16
         ret
 
 
