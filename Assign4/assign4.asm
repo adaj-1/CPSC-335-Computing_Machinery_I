@@ -1,10 +1,8 @@
-
-.data                                           // must be delcared to call scanf()
-n:      .word 0                                 // must be delcared to call scanf()
+// CPSC 355 Assign4
+// Jada Li
+// UCID: 30016807
 
 .text
-prompt:         .string "Please specify N: "
-scan:           .string "%d"                    // holds user input in integer
 msg:    	.string "The 2D array is: {"
 printX:		.string "The X matrix is: {"
 printY:		.string "The Y matrix is: {"
@@ -13,9 +11,6 @@ middle:		.string ", "
 ending:		.string "}\n"
 indexing:	.string "(%d,%d)"
 printProduct:	.string "The product matrix is: {"
-printSum:	.string "The sum is: "
-printMax:	.string "The max is: "
-printMin:	.string "The min is: "
 
 define(userInput,x19)
 define(arr_base, x20)
@@ -27,7 +22,12 @@ define(productarr_base, x26)
 define(j, x27)
 //define(arr_size, x28)
 
-//define(struct_sumMaxMin, 
+//define(baseAddress, x20)
+//	arr_base = 0
+//	productarr_base = 4
+//	baseAddress_size = 8
+
+
 
 .balign 4
 .global main
@@ -35,15 +35,10 @@ define(j, x27)
 main:   stp x29, x30, [sp, -16]!
         mov x29, sp
 
-        ldr x0,=prompt
-        bl printf
-
-        ldr x0, =scan                           // scan user input
-        ldr x1, =n                              // load  address =n to register x1
-        bl scanf                                // Get the first number
-
-        ldr x14, =n                              // load address =n to register x14
-        ldr userInput, [x14]                     // load the value of n
+	mov x9, x1
+	ldr x0, [x9, 8]			// 8 byte offset to account for the program name
+	bl atoi
+	mov userInput, x0
 
         mul x28, userInput, userInput 	// determine size of arr
 	mov x9, 8				// integer is 4 bytes
@@ -261,42 +256,17 @@ ProductMatrix:
 	ldr x0, =ending			// printing closing bracket
 	bl printf
 
-	mov counter, 0
+	mov counter,1
 	mov offset, 0
-	mov x23, 0
 
-sum:
-	ldr x10, [productarr_base, offset]
-	add offset, offset, 8 
-	
-	add x23, x23, x10	
-	add counter, counter,  1
-	
-	cmp counter, x28		//cmp to size of arr 
-	b.lt sum
-//TODO store in struc
-	
-	ldr x0, =printSum
-	mov x1, x23
-	bl printf
 
-	mov counter, 0
-	mov offset, 0
-	mov x23, 0
 
-max: 	cmp counter, x28
-	b.ge min
-	
-	ldr x10, [productarr_base, offset]
-	add offset, offset, 8 
-	add counter, counter, 1
-	
-	cmp x23, x10
-	b.gt max
-	mov x23, x10
-	b max
-//TODO store in struc
-min:
+
+
+
+
+
+
 
 
 
