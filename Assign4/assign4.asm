@@ -13,6 +13,9 @@ middle:		.string ", "
 ending:		.string "}\n"
 indexing:	.string "(%d,%d)"
 printProduct:	.string "The product matrix is: {"
+printSum:	.string "The sum is: "
+printMax:	.string "The max is: "
+printMin:	.string "The min is: "
 
 define(userInput,x19)
 define(arr_base, x20)
@@ -24,6 +27,7 @@ define(productarr_base, x26)
 define(j, x27)
 //define(arr_size, x28)
 
+//define(struct_sumMaxMin, 
 
 .balign 4
 .global main
@@ -161,9 +165,6 @@ displayXYTest:
 	cmp x23, 1			//TODO using i as tmpVar for now
 	b.lt printYMatrix
 
-	mov counter,1
-	mov offset, 0
-
 XYMultiply:
 	add sp, sp, alloc			// allocating space for product matrix
 
@@ -172,11 +173,8 @@ XYMultiply:
 	mov counter, 0
 	mov i, 0		// product matrix row
 	mov j, 0		// product matrix column
-	mov x10, 0		// X Matrix row
-	mov x11, 0		// X Matrix column
-	mov x13, 0		// 
-	mov x14, 0		// Y Matrix row
-	mov x15, 0		// Y Matrix column
+	mov x10, 0		//
+	mov x11, 0		// 
 	mov x23, 0		//TODO k
 	mov x28, 0	
 
@@ -210,9 +208,10 @@ calculateProduct:
 	
 	mov offset, 0
 	mov x9, 8				// bytes between 2D array elements
-	mul offset, x23, x9			// finding offset for elements in product matrix
+	mul offset, counter, x9			// finding offset for elements in product matrix
 
 	str x28, [productarr_base, offset]	// storing product TODO FIX OFFSET
+	add counter, counter,  1
 
 YMatrixTest:					// LOOP TEST
 	mov x28, 0
@@ -231,11 +230,12 @@ XMartixTest:
 
 	mov counter, 1
 	mov offset, 0
+	mul x28, userInput, userInput 	// determine size of arr
 printProductMatrix:
-	add x23, x23, 1			//TODO using i as tempVar for now
 	ldr x0, =printProduct
 	bl printf
 	
+ProductMatrix:
 	ldr x10, [productarr_base, offset]
 	add offset, offset, 8 
 	
@@ -249,9 +249,9 @@ printProductMatrix:
 	add counter, counter, 1
 
 	cmp counter, x28
-	b.lt printProductMatrix
+	b.lt ProductMatrix
 	
-	ldr x10, [arr_base, offset]
+	ldr x10,[productarr_base, offset]
 	add offset, offset, 8 
 	
 	ldr x0, =printNum		//printing martix num
@@ -261,8 +261,44 @@ printProductMatrix:
 	ldr x0, =ending			// printing closing bracket
 	bl printf
 
-	mov counter,1
+	mov counter, 0
 	mov offset, 0
+	mov x23, 0
+
+sum:
+	ldr x10, [productarr_base, offset]
+	add offset, offset, 8 
+	
+	add x23, x23, x10	
+	add counter, counter,  1
+	
+	cmp counter, x28		//cmp to size of arr 
+	b.lt sum
+//TODO store in struc
+	
+	ldr x0, =printSum
+	mov x1, x23
+	bl printf
+
+	mov counter, 0
+	mov offset, 0
+	mov x23, 0
+
+max: 	cmp counter, x28
+	b.ge min
+	
+	ldr x10, [productarr_base, offset]
+	add offset, offset, 8 
+	add counter, counter, 1
+	
+	cmp x23, x10
+	b.gt max
+	mov x23, x10
+	b max
+//TODO store in struc
+min:
+
+
 
 
 end:	sub sp, sp, alloc			
