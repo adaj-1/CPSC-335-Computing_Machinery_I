@@ -3,7 +3,7 @@
 // UCID: 30016807
 
 .text
-msg:    	.string "The 2D array is: {"
+print2DArray:  	.string "The 2D array is: {"
 printX:		.string "The X matrix is: {"
 printY:		.string "The Y matrix is: {"
 printNum:	.string "%d"
@@ -14,252 +14,249 @@ printProduct:	.string "The product matrix is: {"
 
 define(userInput,x19)
 define(arr_base, x20)
-define(offset, x21)
-define(alloc, x22)
+define(productarr_base, x21)
+define(offset, x22)
+define(alloc, x23)
 define(counter, x24)
 define(i, x25)
-define(productarr_base, x26)
+define(k, x26)
 define(j, x27)
-//define(arr_size, x28)
 
-//define(baseAddress, x20)
-//	arr_base = 0
-//	productarr_base = 4
-//	baseAddress_size = 8
+.balign 4				// ensures instructions are properly aligned
+.global main				// makes the label "main" visible to the linker
 
+main:   stp x29, x30, [sp, -16]!	// saves the state of the registers used by calling code
+        mov x29, sp			// updates FP to the current SP
 
-
-.balign 4
-.global main
-
-main:   stp x29, x30, [sp, -16]!
-        mov x29, sp
-
-	mov x9, x1
+	mov x9, x1			// getting command line input
 	ldr x0, [x9, 8]			// 8 byte offset to account for the program name
-	bl atoi
-	mov userInput, x0
+	bl atoi				// converting string to integer
+	mov userInput, x0		// userInput holds N
+	
+	cmp userInput, xzr
+	b.le end			
 
         mul x28, userInput, userInput 	// determine size of arr
-	mov x9, 8				// integer is 4 bytes
+
+	mov x9, 8			// integer is 4 bytes and x y matrix stored together so 8 bytes
         mul alloc, x28, x9 		// total array size
-        neg alloc, alloc
-	and alloc, alloc, -16                   // allocates (N*N*4) & -16 bytes
-        add sp, sp, alloc
+        neg alloc, alloc		// to deallocate at the end
+	and alloc, alloc, -16           // allocates (N*N*4) & -16 bytes
+        add sp, sp, alloc		// update stack frame
 
-	mov arr_base, sp
-        mov offset, 0
-        mov counter, 0
-	mov x11, 2	
-	mul x23, x28, x11			// calculating number of elements in array
+	mov arr_base, sp		// set array base to stack frame
+        mov offset, 0			// initialize offset
+        mov counter, 0			// initialize counter
+	mov x9, 2			// hold 2 to calculate num of elements
+	mul x28, x28, x9	//TODO	// calculating num of elements in array
 
-        mov x0, 0
-        bl time
-        bl srand
+        mov x0, 0			// initalizing x0 to 0
+        bl time				// using time to set random seed
+        bl srand			// set the seed for random
 	
-	ldr x0, =msg				
-	bl printf
+	ldr x0, =print2DArray		// begin displaying randomly generated 2D array				
+	bl printf			// print message
 
+// fills 2D array with random integers
 strLoop:
-	bl rand
+	bl rand				// call random 
 
-	mov x10, x0	
-	mov x11, 25			 // putting 25 into x11 temp register
-	lsr x10, x10, x11 	         // logic shift right to make randomly generated number small
-	add x10, x10, 1                  // ensuring jackpot number is never 0 or the loop will exit
+	mov x9, x0			// x9 holds random integer
+	mov x10, 25			// used to populate with integers less than or equal to 100
+	lsr x9, x9, x10 	        // logic shift right to make randomly generated number small
+	add x9, x9, 1                   // ensurng num is never 0 
 	
-	str x10, [arr_base, offset]	
-	add offset, offset, 4 
+	str x9, [arr_base, offset]	// store in 2D array
+	add offset, offset, 4 		// increment offset
 
-	add counter, counter, 1
+	add counter, counter, 1		// increment counter
 
 strLoopTest:
-	cmp counter, x23		// compare to number of elements in array 
-	b.lt strLoop
+	cmp counter, x28	//TODO		// compare to number of elements in array 
+	b.lt strLoop			// loop until 2D array is filled
 	
-	mov counter, 1
-	mov offset, 0
+	mov x9, 2
+	udiv x28, x28, x9
+	mov counter, 1			// reset counter
+	mov offset, 0			// reset offset
 
 ldrLoop:
-	ldr x10, [arr_base, offset]
-	add offset, offset, 4 
-	ldr x11, [arr_base, offset]
-	add offset, offset, 4 
+	ldr x9, [arr_base, offset]	// load x matrix value
+	add offset, offset, 4 		// increment offset
+	ldr x10, [arr_base, offset]	// load y matrix value
+	add offset, offset, 4 		// increment offset
 
-	ldr x0, =indexing
-	mov x1, x10
-	mov x2, x11
-	bl printf
+	ldr x0, =indexing		// print 2D array
+	mov x1, x9			// x element
+	mov x2, x10			// y element
+	bl printf			// print message
 	
-	ldr x0, =middle
-	bl printf
+	ldr x0, =middle			// print comma
+	bl printf			// print message
 
-	add counter, counter, 1
+	add counter, counter, 1		// increment counter
 	
 ldrLoopTest:
-	cmp counter, x28
-	b.lt ldrLoop
+	cmp counter, x28		// compare to N*N
+	b.lt ldrLoop			// loop until num of elements - 1 is printed
 
-	ldr x10, [arr_base, offset]
-	add offset, offset, 4 
-	ldr x11, [arr_base, offset]
-	add offset, offset, 4 
+	ldr x9, [arr_base, offset]	// load x matrix value
+	add offset, offset, 4 		// increment offset
+	ldr x10, [arr_base, offset]	// load y matrix value
+	add offset, offset, 4 		// increment offset
 
-	ldr x0, =indexing		// printing index of last element in 3D array
-	mov x1, x10
-	mov x2, x11
-	bl printf
+	ldr x0, =indexing		// printing index of last element in 2D array
+	mov x1, x9			// load x matrix value
+	mov x2, x10			// load y matrix value
+	bl printf			// print message
 
 	ldr x0, =ending			// printing closing bracket
-	bl printf
+	bl printf			// print message
 	
-	mov counter, 1
-	mov offset, 0
-	mov x23, 0			//TODO using i as tempVar for now
+	mov counter, 1			// reset counter
+	mov offset, 0			// reset offset
+	mov i, 0			// initialize loop counter
 
 printXMatrix:
-	ldr x0, =printX
-	bl printf
-	b displayXY
+	ldr x0, =printX			// begin printing X matrix
+	bl printf			// print message
+	b displayXY			// branch to print X matrix
 	
 printYMatrix:
-	add x23, x23, 1			//TODO using i as tempVar for now
-	ldr x0, =printY
-	bl printf
+	add i, i, 1			// count second loop
+	mov counter, 1			// reset counter
+	mov offset, 4			// set offset to y matrix
+
+	ldr x0, =printY			// begin printing Y matrix
+	bl printf			// print message
 	
 displayXY:
-	ldr x10, [arr_base, offset]
-	add offset, offset, 8 
+	ldr x9, [arr_base, offset]	// loading first element
+	add offset, offset, 8 		// increment offset by 8 to get to next matrix element
 	
-	ldr x0, =printNum
-	mov x1, x10
-	bl printf
+	ldr x0, =printNum		// print matrix element
+	mov x1, x9			// load matrix element value
+	bl printf			// print message
 	
-	ldr x0, =middle
-	bl printf
+	ldr x0, =middle			// print comma
+	bl printf			// print message
 	
-	add counter, counter, 1
+	add counter, counter, 1		// increment counter 
 
 displayXYTest:
-	cmp counter, x28
-	b.lt displayXY
+	cmp counter, x28		// check if all matrix elements printed
+	b.lt displayXY			// loop until num of elements - 1 is printed
 	
-	ldr x10, [arr_base, offset]
-	add offset, offset, 8 
+	ldr x9, [arr_base, offset]	// load last element 
 	
-	ldr x0, =printNum		//printing martix num
-	mov x1, x10
-	bl printf
+	ldr x0, =printNum		// printing matrix element
+	mov x1, x9			// load matrix element value
+	bl printf			// print message	
 	
-	ldr x0, =ending			// printing closing bracket
-	bl printf
+	ldr x0, =ending			// print closing bracket
+	bl printf			// print message
 
-	mov counter, 1
-	mov offset, 4
-	
-	cmp x23, 1			//TODO using i as tmpVar for now
-	b.lt printYMatrix
+	cmp i, 1			// check if loop printed both X Y matrix
+	b.lt printYMatrix		// loop until complete
+        mov offset, 0			// reset offset
+	mov counter, 0			// reset counter
 
 XYMultiply:
-	add sp, sp, alloc			// allocating space for product matrix
+	add sp, sp, alloc		// allocating space for product matrix
 
-	mov productarr_base, sp			
-        mov offset, 0
-	mov counter, 0
-	mov i, 0		// product matrix row
-	mov j, 0		// product matrix column
-	mov x10, 0		//
-	mov x11, 0		// 
-	mov x23, 0		//TODO k
-	mov x28, 0	
+	mov productarr_base, sp		// setting base for prodcut array	
 
-findXMatrixOffset:				// LOOP
-	mov x9, 8 				// bytes between 2D array elements
+	mov i, 0			// product matrix row counter
+	mov j, 0			// product matrix column counter
+	mov k, 0			// product matrix internal loop counter
+	mov x13, 0	//TODO
+
+findXMatrixOffset:			// LOOP
+	mov x9, 8 			// bytes between 2D array elements
 	
-	mov offset, userInput			// m
-	mul offset, offset, i			// m * i
-	add offset, offset, x23			// (m * i) + j
-	mul offset, offset, x9			// ((m * i) + j) * E_size
-	ldr x10, [arr_base, offset]
+	mov offset, userInput		// m
+	mul offset, offset, i		// m * i
+	add offset, offset, k		// (m * i) + j
+	mul offset, offset, x9		// ((m * i) + j) * E_size
+	ldr x10, [arr_base, offset]	// load X element
 
-findYMatrixOffset:				// LOOP
-	mov x9, 8 				// bytes between 2D array elements
-	mov x12, 4				// offset for y matrix elements	
+findYMatrixOffset:			// LOOP
+	mov x9, 8 			// bytes between 2D array elements
+	mov x12, 4			// offset for y matrix elements	
 
-	mov offset, userInput			// m
-	mul offset, offset, x23			// (m * i)
-	add offset, offset, j			// ((m * i) + j) * E_size
-	mul offset, offset, x9			// ((m * i) + j) * E_size
-	add offset, offset, x12			// +4 bytes to get to y matrix values
-	ldr x11, [arr_base,offset]		// getting Y element
+	mov offset, userInput		// m
+	mul offset, offset, k		// (m * i)
+	add offset, offset, j		// ((m * i) + j) * E_size
+	mul offset, offset, x9		// ((m * i) + j) * E_size
+	add offset, offset, x12		// +4 bytes to get to y matrix values
+	ldr x11, [arr_base,offset]	// load Y element
 
 calculateProduct:					
-	mul x10, x10, x11			// multiplying X and Y element
-	add x28, x28, x10			// summing
+	mul x10, x10, x11		// multiplying X and Y element
+	add x13, x13, x10		// summation
 
-	add x23, x23, 1				// increment column for X matrix and row for Y matrix
-	cmp x23, userInput
-	b.lt findXMatrixOffset
+	add k, k, 1			// increment column for X matrix and row for Y matrix
+	cmp k, userInput		// check if calculation is complete for row/column
+	b.lt findXMatrixOffset		// loop until complete
 	
-	mov offset, 0
-	mov x9, 8				// bytes between 2D array elements
-	mul offset, counter, x9			// finding offset for elements in product matrix
+	mov offset, 0			// reset offset
+	mov x9, 8			// bytes between 2D array elements
+	mul offset, counter, x9		// finding offset for elements in product matrix
 
-	str x28, [productarr_base, offset]	// storing product TODO FIX OFFSET
-	add counter, counter,  1
+	str x13, [productarr_base, offset]	// storing product in new array
+	add counter, counter,  1	// indicate that an element has been calculated
 
-YMatrixTest:					// LOOP TEST
-	mov x28, 0
-	mov x23, 0				// resetting column for X matrix and row for Y matrix
-	add j, j, 1				// incrementing	column for Y matrix
-	cmp j, userInput			// check if finished calculating product element
-	b.lt findXMatrixOffset
+YMatrixTest:				// LOOP TEST
+	mov x13, 0			// reset for next product calculation
+	mov k, 0			// reset column for X matrix and row for Y matrix
+	add j, j, 1			// incrementing	column for Y matrix
+	cmp j, userInput		// check if finished calculating column product element
+	b.lt findXMatrixOffset		// loop until complete
 
 XMartixTest:
-	mov x28, 0
-	mov x23, 0
-	mov j, 0
-	add i, i , 1				// incrementing row for X matrix
-	cmp i, userInput
-	b.lt findXMatrixOffset
+	mov x13, 0			// reset for next product calculation
+	mov k, 0			// reset column for X matrix and row for Y matrix
+	mov j, 0			// reset row for Y matrix
+	add i, i , 1			// incrementing row for X matrix
+	cmp i, userInput		// check if finisshed calculating row product element
+	b.lt findXMatrixOffset		// loop until complete
 
-	mov counter, 1
-	mov offset, 0
+	mov counter, 1			// reset counter
+	mov offset, 0			// reset offset
 	mul x28, userInput, userInput 	// determine size of arr
+
+
 printProductMatrix:
-	ldr x0, =printProduct
-	bl printf
+	ldr x0, =printProduct		// print product matrix
+	bl printf			// print message
 	
 ProductMatrix:
-	ldr x10, [productarr_base, offset]
-	add offset, offset, 8 
+	ldr x9, [productarr_base, offset]	// load product matrix element
+	add offset, offset, 8 		// update offset to next prodct matrix element
 	
-	ldr x0, =printNum
-	mov x1, x10
-	bl printf
-	
-	ldr x0, =middle
-	bl printf
-	
-	add counter, counter, 1
+	ldr x0, =printNum		// print product matrix element
+	mov x1, x9			// load product matrix element
+	bl printf			// print message
 
-	cmp counter, x28
-	b.lt ProductMatrix
+	ldr x0, =middle			// print comma between elements
+	bl printf			// print message
 	
-	ldr x10,[productarr_base, offset]
-	add offset, offset, 8 
+	add counter, counter, 1		// indicate how many elements have been printed
+
+	cmp counter, x28		// check if all elements-1  have been printed
+	b.lt ProductMatrix		// loop until complete
 	
-	ldr x0, =printNum		//printing martix num
-	mov x1, x10
-	bl printf
+	ldr x9,[productarr_base, offset]	// load last product matrix element
+					
+	ldr x0, =printNum		// print last element in product matrix
+	mov x1, x9			// load last element
+	bl printf			// print message
 	
 	ldr x0, =ending			// printing closing bracket
-	bl printf
-
-	mov counter,1
-	mov offset, 0
-
-
+	bl printf			// print message
+	
+	mov counter,1			// reset counter
+	mov offset, 0			// reset offset
 
 
 
@@ -271,7 +268,10 @@ ProductMatrix:
 
 
 
-end:	sub sp, sp, alloc			
+
+
+end:	
+	sub sp, sp, alloc			
 	sub sp, sp, alloc
         ldp x29, x30, [sp], 16
         ret
