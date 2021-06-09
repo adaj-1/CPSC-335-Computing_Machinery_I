@@ -1,7 +1,6 @@
 // CPSC 355 Assign4
 // Jada Li
 // UCID: 30016807
-
 .text
 printInputInvalid:.string "Please input N value > 0\n"	// indicates to  user that input iss invalid
 print2DArray:  	.string "The 2D array is: {"		// begins printing 2D array
@@ -27,7 +26,7 @@ define(k, x26)				// used to keep track of loops
 define(j, x27)				// used to keep track of loops
 define(sizeOfArr, x28)			// used to hold total size of array
 
-define(element, x15)
+define(element, x15)			// used to calculated sum max and min of product matrix
 
 .balign 4				// ensures instructions are properly aligned
 .global main				// makes the label "main" visible to the linker
@@ -40,6 +39,7 @@ main:   stp x29, x30, [sp, -16]!	// saves the state of the registers used by cal
 	bl atoi				// converting string to integer
 	mov userInput, x0		// userInput holds N
 	
+        // TODO - check of no command line input
 	cmp userInput, xzr		// to ensure valid input
 	b.gt setupArray			// if valid dont end
 
@@ -49,41 +49,49 @@ main:   stp x29, x30, [sp, -16]!	// saves the state of the registers used by cal
 
 // set up 2D array to hold X and Y matrix
 setupArray:
-	mul sizeOfArr, userInput, userInput 	// set to size of arr (N*N)
+	// calculate stack size required for:
+	//   struct {Sum, Max, Min); (X,Y) Matrix, and Product Matrix
+	mul sizeOfArr, userInput, userInput 	// set tmp to size of arr (N*N)
+	mov x9, 24 			// allocate x,y and product array with 8 byte int i.e. 3*8=24 
+	mul alloc, sizeOfArr, x9	// 3*8*N*N		
+	
+	add alloc, alloc, 24		// add local valuable struct{ sum, max, min )
 
-	mov x9, 2			// hold 2 to calculate num of elements
-	mul sizeOfArr, sizeOfArr, x9	// calculate num of elements in 2D array 2*(N*N)
-	mov x9, 8			// byte allocation for each integers
-	mul alloc, sizeOfArr, x9 	// integer is 4 bytes and x y matrix stored together so 8 bytes
-        neg alloc, alloc		// to deallocate at the end
-	and alloc, alloc, -16           // allocates (N*N*4) & -16 bytes
-       
-	add sp, sp, alloc		// update stack frame
-	mov arr_base, sp		// set array base to stack frame
-        
-	add sp, sp, alloc		// allocating space for product matrix
-	mov productarr_base, sp		// setting base for prodcut array	
+	neg alloc, alloc		// to deallocate at the end
+	and alloc, alloc, -16           // allocates 3*(N*N*8) & -16 bytes
+	add sp, sp, alloc		// update stack pointer
+
+	struct_Sum_offset = 0		// offset from sp
+	struct_Max_offset = 8		// offset for Max
+	struct_Min_offset = 16		// offset for Min
+
+	add arr_base, sp, 24		// skip sum, max & min
 	
-	add sp, sp, -16			// allocating space for product matrix
-	
+	mov x9, 16			// calc x,y matrix/array size for productarr base i.e. 2*8*N*N
+	mul x10, sizeOfArr, x9		// calculating bytes needed for product Matrix
+	add productarr_base, arr_base, x10	// setting product array base
+
+	// setup to fill x,y array with random value
+	mov x9, 2			// to calculate size  of X Y matrix
+	mul sizeOfArr, sizeOfArr, x9	// *2 to account for x & y values
 	mov offset, 0			// initialize offset
         mov counter, 0			// initialize counter
 	
 	mov x0, 0			// initalizing x0 to 0
         bl time				// using time to set random seed
-       // bl srand	TODO	// set the seed for random
+        bl srand			// set the seed for random
 	
 	ldr x0, =print2DArray		// begin displaying randomly generated 2D array				
 	bl printf			// print message
+
 
 // store loop for 2D array with random integers
 strLoop:
 	bl rand				// call random 
 
 	mov x9, x0			// x9 holds random integer
-	mov x10, 25			// used to populate with integers less than or equal to 100
-	lsr x9, x9, x10 	        // logic shift right to make randomly generated number small
-
+	mov x10, 100			// used to find random integers less than or equal to 100
+	and x9,x9, x10			// calculating random number less than or equal to 100
 	str x9, [arr_base, offset]	// store in 2D array
 	add offset, offset, 8 		// increment offset
 
@@ -91,11 +99,11 @@ strLoop:
 
 // checking if finished storing every element
 strLoopTest:
-	cmp counter,sizeOfArr	//TODO		// compare to number of elements in array 
+	cmp counter,sizeOfArr		// compare to number of elements in array 
 	b.lt strLoop			// loop until 2D array is filled
 	
 	mov x9, 2			// used to calculate size of array
-	udiv sizeOfArr, sizeOfArr, x9		// setting back to size of array
+	udiv sizeOfArr, sizeOfArr, x9   // setting back to size of array
 	mov counter, 1			// reset counter
 	mov offset, 0			// reset offset
 
@@ -207,21 +215,21 @@ XYMultiply:
 findXMatrixOffset:			// LOOP
 	mov x9, 16 			// bytes between 2D array elements
 	
-	mov offset, userInput		// m
-	mul offset, offset, i		// m * i
-	add offset, offset, k		// (m * i) + j
-	mul offset, offset, x9		// ((m * i) + j) * E_size
+	mov offset, userInput		// N
+	mul offset, offset, i		// N * i
+	add offset, offset, k		// (N * i) + k
+	mul offset, offset, x9		// ((N * i) + k) * E_size
 	ldr x10, [arr_base, offset]	// load X element
 // find Y matrix value
 findYMatrixOffset:			// LOOP
 	mov x9, 16 			// bytes between 2D array elements
 	mov x12, 8			// offset for y matrix elements	
 
-	mov offset, userInput		// m
-	mul offset, offset, k		// (m * i)
-	add offset, offset, j		// ((m * i) + j) * E_size
-	mul offset, offset, x9		// ((m * i) + j) * E_size
-	add offset, offset, x12		// +4 bytes to get to y matrix values
+	mov offset, userInput		// N
+	mul offset, offset, k		// (N * k)
+	add offset, offset, j		// ((N * k) + j)
+	mul offset, offset, x9		// ((N * k) + j) * E_size
+	add offset, offset, x12		// +8 bytes to get to y matrix values
 	ldr x11, [arr_base,offset]	// load Y element
 
 // Matrix Multiplication
@@ -234,7 +242,7 @@ calculateProduct:
 	b.lt findXMatrixOffset		// loop until complete
 	
 	mov offset, 0			// reset offset
-	mov x9, 16			// bytes between 2D array elements
+	mov x9, 8 			// next  array elements
 	mul offset, counter, x9		// finding offset for elements in product matrix
 
 	str x13, [productarr_base, offset]	// storing product in new array
@@ -267,7 +275,7 @@ printProductMatrix:
 	
 ProductMatrix:
 	ldr x9, [productarr_base, offset]	// load product matrix element
-	add offset, offset, 16 		// update offset to next prodct matrix element
+	add offset, offset, 8  		// update offset to next prodct matrix element
 	
 	ldr x0, =printNum		// print product matrix element
 	mov x1, x9			// load product matrix element
@@ -296,7 +304,7 @@ ProductMatrix:
 // calculating sum, max, and min of product matrix
 sumMaxMin:
 	ldr element, [productarr_base, offset]	// load first product element
-	add offset, offset, 16			// offset to next product element
+	add offset, offset, 8 		// offset to next product element
 
 	mov i , 0 			// sum initialized to zero
 	mov j, element			// max initialized to first element
@@ -322,26 +330,28 @@ min:
 // checks to see if calculation is complete
 sumMaxMinTest:
 	ldr element, [productarr_base, offset]	// load next element value
-	add offset, offset, 16		// offset for next element
+	add offset, offset, 8		// offset for next element
 	cmp counter, sizeOfArr          // cmp to size of arr
 	b.lt sum			// branch if all elements have not been calculated
 
+	str i, [sp, struct_Sum_offset]	// storing sum in struct
+	str j, [sp, struct_Max_offset]	// storing max in struct
+	str k, [sp, struct_Min_offset]	// storying min in struct
+
 	ldr x0, =printSum		// print sum of product matrix
-	mov x1, i			// load sum value
+	ldr x1, [sp, struct_Sum_offset]	// load sum value
 	bl printf			// print message
 	
 	ldr x0, =printMax		// print max of product matrix
-	mov x1, j			// load max value
+	ldr x1, [sp, struct_Max_offset]	// load max value
 	bl  printf			// print message
 
 	ldr x0, =printMin		// print min of product matrix
-	mov x1, k			// load min value
+	ldr x1, [sp, struct_Min_offset]	// load min value
 	bl printf			// print message	
 
 // ends program and deallocates memory
 end:				 	
-	sub sp, sp, -16
-	sub sp, sp, alloc		// deallocating memory for 2D array		
 	sub sp, sp, alloc		// dellocating memory for product matrix
         ldp x29, x30, [sp], 16		// retores state
         ret				// returns control to calling code

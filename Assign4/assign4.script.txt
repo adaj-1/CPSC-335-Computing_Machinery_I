@@ -1,0 +1,32 @@
+Script started on 2021-06-09 16:35:55-06:00
+No such schema “org.gnome.gedit.preferences.editor”
+]0;jada.li@csa1:~/Assign4jada.li@csa1:~/Assign4$ ./assign5 2bash compile.sh assign5[12P./assign5 2[1P 23 2[1P 24 2[C[C[K3
+The 2D array is: {(32,96), (96,64), (0,96), (32,68), (4,4), (96,100), (96,0), (64,68), (64,100)}
+The X matrix is: {32, 96, 0, 32, 4, 96, 96, 64, 64}
+The Y matrix is: {96, 64, 96, 68, 4, 100, 0, 68, 100}
+The product matrix is: {9600, 2432, 12672, 3344, 8592, 13072, 13568, 10752, 22016}
+The sum is: 96048
+The max is: 22016
+The min is: 2432
+]0;jada.li@csa1:~/Assign4jada.li@csa1:~/Assign4$ ./assign4 3[K2
+The 2D array is: {(96,32), (4,68), (100,64), (32,36)}
+The X matrix is: {96, 4, 100, 32}
+The Y matrix is: {32, 68, 64, 36}
+The product matrix is: {3328, 6672, 5248, 7952}
+The sum is: 23200
+The max is: 7952
+The min is: 3328
+]0;jada.li@csa1:~/Assign4jada.li@csa1:~/Assign4$ ./assign4 2[K5[K4
+The 2D array is: {(96,32), (96,64), (0,4), (36,0), (36,96), (32,36), (32,64), (32,100), (4,32), (0,100), (36,36), (36,100), (68,100), (0,96), (68,36), (64,32)}
+The X matrix is: {96, 96, 0, 36, 36, 32, 32, 32, 4, 0, 36, 36, 68, 0, 68, 64}
+The Y matrix is: {32, 64, 4, 0, 96, 36, 64, 100, 32, 100, 36, 100, 100, 96, 36, 32}
+The product matrix is: {15888, 13056, 7824, 10752, 8448, 9728, 4496, 7424, 4880, 7312, 2608, 4752, 10752, 17296, 5024, 8848}
+The sum is: 139088
+The max is: 17296
+The min is: 2608
+]0;jada.li@csa1:~/Assign4jada.li@csa1:~/Assign4$ ./assign4 4[K-1
+Please input N value > 0
+]0;jada.li@csa1:~/Assign4jada.li@csa1:~/Assign4$ ./assign4 -1[K[K0[K[K[K[K[K[K[K[K[K[K[Kexit
+exit
+
+Script done on 2021-06-09 16:36:37-06:00
