@@ -38,8 +38,7 @@ main:   stp x29, x30, [sp, -16]!	// saves the state of the registers used by cal
 	ldr x0, [x9, 8]			// 8 byte offset to account for the program name
 	bl atoi				// converting string to integer
 	mov userInput, x0		// userInput holds N
-	
-        // TODO - check of no command line input
+
 	cmp userInput, xzr		// to ensure valid input
 	b.gt setupArray			// if valid dont end
 
