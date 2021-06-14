@@ -1,4 +1,4 @@
-// CPSC 355 Assign4
+// CPSC 355 Assign5
 // Jada Li
 // UCID: 30016807
 
@@ -34,8 +34,8 @@ string_BoardValue:              .string "%3d"
 string_BoardCr:                 .string "\n"
 string_Space:                   .string " "
 
-define(userInput,x19)	//TODO delete
-define(arr_base, x20)	//TODO delete
+//define(userInput,x19)	//TODO delete
+//define(arr_base, x20)	//TODO delete
 
 define(i_r, w9)		//TODO delete
 
@@ -45,11 +45,11 @@ define(MIN_N_SIZE, 1)	//TODO remove
 .balign 4				// ensures instructions are properly aligned
 .global main				// makes the label "main" visible to the linker
 
-
-// randomNum
-//int randomNum (int minimum, int maximum)
-//      w0 = minimum
-//      w1 = maximum
+// Description:	Random number generator
+// int randomNum (int minimum, int maximum)
+// param:
+//      w0 = minimum is the lower bound for the random number generator
+//      w1 = maximum is the upper bound for the random number generator
 randomNum:
         minimum_size = 4				//
         maximum_size = 4
@@ -85,10 +85,14 @@ randomNum:
         ldp     x29, x30, [sp], dealloc
         ret
 
-
+// Description:	To swap position of cards within the array
 // void swap( 	int *cards, 
 //		int i, 
-//		int j )
+//		int j )	
+// param:
+//	*cards is the array holding the card values
+// 	i is the row position within the array
+// 	j is the column position within the array
 swap:
         cardsPtr_size = 8			// cards pointer address
         i_size = 4
@@ -128,9 +132,13 @@ swap:
         ldp     x29, x30, [sp], dealloc
         ret
 
-//
+// Description: Shuffles cards based on randomized position
 // void shuffle( int *cards, 
 //		 int n)
+// param:
+//	cards is the array holding the card values
+//	N is the user input value used to calculate board size
+
 shuffle:
         cardsPtr_size = 8
         n_size = 4
@@ -184,12 +192,18 @@ shuffle_repeat:
         ldp     x29, x30, [sp], dealloc
         ret
 
-
+// Description:	Initializes the game board and the display board
 //void initialize(      int n,
 //                      int numRowColumn,
 //                      int numCards,
 //                      int board[numRowColumn][numRowColumn],
 //                      int displayBoard[numRowColumn][numRowColumn])
+// param:
+//	N is the user input value used to calculate board size
+//	numRowColumn is the number of rows and columns in the board
+//	board is the 2D array that holds all the card values
+//	displayBoard is the 2D array use for printing the current board
+
 initialize:
         n_size = 4
         numRowColumn_size = 4
@@ -321,9 +335,12 @@ initialize_end:
         ldp     x29, x30, [sp], dealloc
         ret
 
-//
+// Description: Prints the current game board
 //void display( int numRowColumn, 
 //		int dboard[numRowColumn][numRowColumn] )
+// param:
+//	numRowColumn is the number of rows and columns in the board
+//	dboard is the 2D array use for printing the current board
 display:
         numRowColumn_size = 4
         dboardPtr_size = 8
@@ -397,11 +414,18 @@ display_2:
         ldp     x29, x30, [sp], dealloc
         ret
 
-//void updateBoard(     int row,
+// Description: Updates the display board to represent the current board
+// void updateBoard(     int row,
 //                      int col,
 //                      int numRowColumn,
 //                      int board[numRowColumn][numRowColumn],
 //                      int displayBoard[numRowColumn][numRowColumn])
+// param:
+//	row index of row position
+//	col index of column position
+// 	numRowColumn is the number of rows and columns in the board
+//  	board is the 2D array that holds all the card values
+//  	displayBoard is the 2D array use for printing the current board
 updateBoard:
         row_size = 4
         col_size = 4
@@ -455,12 +479,22 @@ updateBoard:
         ldp     x29, x30, [sp], dealloc
         ret
 
-//int findDistance(     int numRowColumn,
+// Description: Returns the distance between the second card guess and the correct card location for a match
+// int findDistance(     int numRowColumn,
 //                      int board[numRowColumn][numRowColumn],
 //                      int row1,
 //                      int col1,
 //                      int row2,
 //                      int col2)
+// param:
+//	numRowColumn is the number of rows and columns in the board
+//	board is the 2D array that holds all the card values
+//	row1 index of row position for first card guess
+//	col1 index of column position for first card guess
+//	row2 index of row position for second card guess
+//	col2 index of column position for second card guess
+// returns:
+//	distance from the correct card location
 findDistance:
 
         numRowColumn_size = 4
@@ -576,9 +610,12 @@ findDistance_end:
         ldp     x29, x30, [sp], dealloc
         ret
 
-
+// Description: Records player names and score in log file
 // void logFile( char *playerName, 
 //		 int score )
+// param:
+//	playerName holds the user input player name
+//	score holds the current score
 logFile:
         playerName_size = 8
         score_size = 4
@@ -611,9 +648,14 @@ logFile:
         ldp     x29, x30, [sp], dealloc
         ret
 
-
+// Description: Converts user coordinate inputs from string to integer
 // bool stringToInt( char *inputString, 
 //		     int *value )
+// param:
+//	inputString holds the user coordinate inputs
+//	value gets filled with the coordinate values
+// returns:
+//	input validation check true or false
 stringToInt:
         inputString_size = 8
         valuePtr_size = 8
@@ -665,10 +707,17 @@ stringToInt_finish:
         ldp     x29, x30, [sp], dealloc
         ret
 
-
+// Description: Determines whether user inputs 'q' or 'Q' to quit or a coordinate
 // bool getRowColumn( bool *quitting, 
 //		      int *row, 
 //		      int *col )
+// param:
+//	*quitting holds false if user does not quit
+//	*row holds row coordinate
+//	*col holds column coordinate
+// returns:
+//	true if coordinate or quit is inputed and returns false otherwise
+
 getRowColumn:
         quittingPtr_size = 8
         rowPtr_size = 8
@@ -745,7 +794,7 @@ getRowColumn:
         bl      stringToInt
         and     w0, w0, 0xFF            // bool return, mask off the high bytes
         cmp     w0, 0
-        beq     getRowColunm_quit
+        beq     getRowColunm_end
 
         // string2 = strtok (NULL, " ");
         // if (string2 != NULL)
@@ -782,7 +831,10 @@ getRowColumn_end:
         ldp     x29, x30, [sp], dealloc
         ret
 
-////////////////////////////////////////////////////////////////////////
+// Description: Prompts user input, initializes, maintains, and terminates the card matching game
+// param:
+//	argc argument count that holds the number of strings pointed
+// 	*argv argument vector
 main:  
         playerName_size = 24            // char playerName[24]
 	tmpValue_size = 4		// int tmpValue
