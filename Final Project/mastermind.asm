@@ -412,7 +412,9 @@ initializeGame:
         ldr     x1, =startUpRow
         mov     x2, 0
         ldr     w2, [x1]
-        add     x0, x0, x2              // &startUpOutput[startUpRow]
+        mov 	x3, 100
+	mul	x3, x2, x3
+	add     x0, x0, x3              // &startUpOutput[startUpRow]
         add     w2, w2, 1
         str     w2, [x1]                // startUpRow++
         ldr     x1, =string_RunTestMode
@@ -433,7 +435,9 @@ initialize_showPlayMode:
         ldr     x1, =startUpRow
         mov     x2, 0
         ldr     w2, [x1]
-        add     x0, x0, x2              // &startUpOutput[startUpRow]
+        mov 	x3, 100
+	mul	x3, x2, x3
+	add     x0, x0, x3              // &startUpOutput[startUpRow]
         add     w2, w2, 1
         str     w2, [x1]                // startUpRow++
         ldr     x1, =string_RunPlayMode
@@ -477,9 +481,9 @@ initialize_code_j:
 	bl	randomNum
 	bl	colour
 	mov	x24, x0				// x24 = colour(randNum)
-	
-	mul	x0, x19, x21			// x0 = i*rows
-	add	x0, x0, x20			// code = i*row + j
+	//TODO
+	mul	x0, x19, x22			// x0 = i*columns
+	add	x0, x0, x20			// code = i*columns + j
 	ldr	x1, [sp, codePtr_save]		// x1 = code[i][j]
 	add	x0, x0, x1
 	str	x24, [x0]			// code[i][j] = colour(randNum)
@@ -506,7 +510,9 @@ initialize_setupMode:
         ldr     x1, =startUpRow
         mov     x2, 0
         ldr     w2, [x1]
-        add     x0, x0, x2              // &startUpOutput[startUpRow]
+        mov 	x3, 100
+	mul	x3, x2, x3
+	add     x0, x0, x3              // &startUpOutput[startUpRow]
         add     w2, w2, 1
         str     w2, [x1]                // startUpRow++
         ldr     x1, =string_HiddenCode
@@ -536,7 +542,9 @@ initialize_setupMode:
         ldr     x1, =startUpRow
         mov     x2, 0
         ldr     w2, [x1]
-        add     x0, x0, x2              // &startUpOutput[startUpRow]
+        mov 	x3, 100
+	mul	x3, x2, x3
+	add     x0, x0, x3              // &startUpOutput[startUpRow]
         add     w2, w2, 1
         str     w2, [x1]                // startUpRow++
         ldr     x1, =string_CR
@@ -549,8 +557,8 @@ initialize_setupMode:
 initialize_displaycode_i:
         mov     x20, 0                        // x20 = j = 0
 initialize_displaycode_j:
-        mul     x0, x19, x21                    // x0 = i*rows
-        add     x0, x0, x20                     // code = i*row + j
+        mul     x0, x19, x22                    // x0 = i*columns
+        add     x0, x0, x20                     // code = i*columns + j
         ldr     x1, [sp, codePtr_save]          // x1 = code[i][j]
         add     x0, x0, x1
         ldrsb   x23, [x0]                       // x23 = code[i][j]	reading 1 byte (char)
@@ -560,7 +568,9 @@ initialize_displaycode_j:
         ldr     x1, =startUpRow
         mov     x2, 0
         ldr     w2, [x1]
-        add     x0, x0, x2              // &startUpOutput[startUpRow]
+        mov 	x3, 100
+	mul	x3, x2, x3
+	add     x0, x0, x3              // &startUpOutput[startUpRow]
         add     w2, w2, 1
         str     w2, [x1]                // startUpRow++
         ldr     x1, =string_Display_Char
@@ -581,7 +591,9 @@ initialize_displaycode_j:
         ldr     x1, =startUpRow
         mov     x2, 0
         ldr     w2, [x1]
-        add     x0, x0, x2              // &startUpOutput[startUpRow]
+        mov 	x3, 100
+	mul	x3, x2, x3
+	add     x0, x0, x3              // &startUpOutput[startUpRow]
         add     w2, w2, 1
         str     w2, [x1]                // startUpRow++
         ldr     x1, =string_CR
@@ -602,7 +614,9 @@ initialize_startCracking:
         ldr     x1, =startUpRow
         mov     x2, 0
         ldr     w2, [x1]
-        add     x0, x0, x2              // &startUpOutput[startUpRow]
+        mov 	x3, 100
+	mul	x3, x2, x3
+	add     x0, x0, x3              // &startUpOutput[startUpRow]
         add     w2, w2, 1
         str     w2, [x1]                // startUpRow++
         ldr     x1, =string_StartCracking
@@ -1051,8 +1065,9 @@ findBW_loop3_continue:
 	cmp	x24, x22
 	b.lt    findBW_loop3_y          // y < setup.columns
 
-        add     x23, x19, 1
-        cmp     x23, x21                // x < setup.rows
+       //TODO  add     x23, x19, 1
+        add	x23, x23, 1
+	cmp     x23, x21                // x < setup.rows
         b.lt    findBW_loop3_x
 
         add     x20, x20, 1
@@ -2119,7 +2134,7 @@ getGuessOrCommands:
         setupPtr_save = 16                   	// sp offset
         userGuessPtr_save = setupPtr_save + setupPtr_size
         inputString_save = userGuessPtr_save + userGuessPtr_size
-        tmpString_save = inputString_size + inputString_size
+        tmpString_save = inputString_save + inputString_size
         x19_save = tmpString_save + 8
         x20_save = x19_save + 8
         x21_save = x20_save + 8
@@ -2204,13 +2219,13 @@ getGuessOrCommands_copyString_done:
 getGuessOrCommands_fillString_i:
 	mov 	x20, 0				// x20 = j = 0
 getGuessOrCommands_fillString_j:
-	mul	x0, x19, x21			// i*setup.columns
+	mul	x0, x19, x22			// i*setup.columns
 	add	x0, x0, x20			// i*setup.columns + j
 	add     x1, sp, tmpString_save	
 	add	x2, x1, x0			// &tmpString[i*setup.columns + j]
 	ldrb	w3, [x2]			// w3 = tmpString[i*setup.columns + j]
 
-        mul     x0, x19, x21    		// i*setup.columns
+        mul     x0, x19, x22    		// i*setup.columns
         add     x0, x0, x20     		// i*setup.columns + j
         ldr     x1, [sp, userGuessPtr_save]
 	add     x2, x1, x0			// userGuess[i][j] = w3
@@ -2689,10 +2704,10 @@ main_gameLoop:
 	cmp	w0, 0
 	b.ne	main_gameOver
 
-//TODO duplication	
-//	ldr     w0, [sp, gameQuit_save]
-//      cmp     w0, 0
-//        b.ne    main_gameOver
+	
+	ldr     w0, [sp, gameQuit_save]
+        cmp     w0, 0
+        b.ne    main_gameOver
 
 	// Play game
 	// myScores.numOfTrials++;... keep track of trials
