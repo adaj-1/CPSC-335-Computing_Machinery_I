@@ -68,9 +68,7 @@ string_Dash:		.string "- "
 string_Display_Hints_1:        	.string "%s  B  W  R  S    T\n"
 string_Display_Hints_2:		.string "%s %2d %2d %2d  %4.2f %s\n"
 
-//TODO - remove
-string_Clear: 		       	.string ""
-//string_Clear:                   .string "clear"
+string_Clear:                   .string "clear"
 
 string_Space:			.string " "
 
@@ -375,8 +373,7 @@ initializeGame:
 	mov	x0, sp
 	add	x0, x0, tempTime_save		// &tempTime
 	bl	time				// time returns in x0
-// TODO - uncomment fixed seed	
-//	bl	srand
+	bl	srand
 
 	//* resets display buffers */
 	// screenCurrentRow = 1;
@@ -481,7 +478,6 @@ initialize_code_j:
 	bl	randomNum
 	bl	colour
 	mov	x24, x0				// x24 = colour(randNum)
-	//TODO
 	mul	x0, x19, x22			// x0 = i*columns
 	add	x0, x0, x20			// code = i*columns + j
 	ldr	x1, [sp, codePtr_save]		// x1 = code[i][j]
@@ -536,7 +532,6 @@ initialize_setupMode:
         add     x0, x0, s_UserSetup_columns_offset
         ldrsw   x22, [x0]
 
-// TODO - tbd if should keep CR
 	// for (int i = 0; i < setup.rows; i++ )
         ldr     x0, =startUpOutput
         ldr     x1, =startUpRow
@@ -1065,7 +1060,6 @@ findBW_loop3_continue:
 	cmp	x24, x22
 	b.lt    findBW_loop3_y          // y < setup.columns
 
-       //TODO  add     x23, x19, 1
         add	x23, x23, 1
 	cmp     x23, x21                // x < setup.rows
         b.lt    findBW_loop3_x
@@ -1368,6 +1362,8 @@ logScore:
 	ldr	x2, [sp, setupPtr_save]
 	add	x2, x2, s_UserSetup_playerName_offset
 	bl	fprintf		
+	b	logScore_end
+
 logScore_1:
 	mov	x0, x19			// not quit
 	ldr	x1, =string_LogScores
@@ -1379,6 +1375,7 @@ logScore_1:
 	add	x3, sp, tmpStr_save
 	bl	fprintf
 
+logScore_end:
 	ldr     x19, [sp, x19_save]
         ldr     x20, [sp, x20_save]
         ldr     x21, [sp, x21_save]
@@ -1738,12 +1735,10 @@ displayTop_loop1:
 	ldr	w2, [sp, showBottom_save]
 	cmp	w2, 0
 	b.eq	displayTop_showTop
-//	mov     w0, MY_POS_INFINITY     // show bottom - TODO fix up the infinity num
-	mov	w0, 0x7f800000
+	mov     w0, MY_POS_INFINITY     // show bottom 
 	b	displayTop_showCont
 displayTop_showTop:
-//	mov	w0, MY_NEG_INFINITY	// show top - TODO fix up the infinity num
-	mov     w0, 0xff800000
+	mov	w0, MY_NEG_INFINITY	// show top 
 displayTop_showCont:
 	scvtf   d0, w0
 	str	d0, [x1]		// score[i] = + or - INFINITY
@@ -1800,7 +1795,6 @@ displayTop_scan:
 	cmp	w0, 3
 	b.ne	displayTop_leaveScan
 
-// TODO - needs to be fixed with floating points
 	//if (strcmp(tmpScore,"-INFINITY") != 0)
 	add	x0, sp, tmpScore_save
 	ldr	x1, =string_NegInfinity
@@ -1903,7 +1897,6 @@ displayTop_loop_j:
 
 displayTop_updateBuffer:	
 	// score[i] = logScore; 
-//TODO - check logScore value
         add     x0, sp, tmpScoreFloat_save
         ldr     d0, [x0]
 
@@ -2743,7 +2736,6 @@ main_gameLoop:
 	cmp	w0, 0
 	b.eq 	main_showScoreHints
 	
-// TODO - use floating point for scores
 	mov	w0, MY_NEG_INFINITY
 	scvtf	d0, w0
 	str	d0, [sp, myScores_save + s_AllScores_finalScore_offset]
@@ -2973,7 +2965,6 @@ main_gameOver:
 	ldr	x1, [sp, codePtr_save]
         mov     x2, x20
         mov     x3, x21
-// TODO uncomment
  	bl	exitGame
 
         ldr     w0, [sp, gameQuit_save]
